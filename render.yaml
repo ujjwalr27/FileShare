@@ -1,0 +1,56 @@
+# Render Blueprint for FileShare App
+# Database: Using Supabase (configure DATABASE_URL manually)
+services:
+  # Backend API
+  - type: web
+    name: fileshare-backend
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        sync: false  # Add your Supabase connection string in Render dashboard
+      - key: SUPABASE_URL
+        sync: false  # Add your Supabase project URL
+      - key: SUPABASE_KEY
+        sync: false  # Add your Supabase service_role key
+      - key: USE_SUPABASE_STORAGE
+        value: true
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      - key: MAX_FILE_SIZE
+        value: 104857600
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ML_SERVICE_URL
+        sync: false
+      - key: ML_SERVICE_ENABLED
+        value: true
+    
+  # ML Service
+  - type: web
+    name: fileshare-ml-service
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: cd ml-service && pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    startCommand: cd ml-service && uvicorn main:app --host 0.0.0.0 --port 8001
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MODEL_CACHE_DIR
+        value: /opt/render/project/src/ml-service/models
+
+# No database service - using Supabase instead
