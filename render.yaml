@@ -8,7 +8,7 @@ services:
     plan: free
     region: oregon
     buildCommand: cd backend && npm install && npm run build
-    startCommand: cd backend && npm start
+    startCommand: cd backend && NODE_OPTIONS='--dns-result-order=ipv4first' npm start
     envVars:
       - key: NODE_ENV
         value: production
