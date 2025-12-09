@@ -45,10 +45,8 @@ services:
     region: oregon
     runtime: python-3.11
     buildCommand: cd ml-service && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt && python -m spacy download en_core_web_sm
-    startCommand: cd ml-service && uvicorn main:app --host 0.0.0.0 --port 8001
+    startCommand: cd ml-service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PORT
-        value: 8001
       - key: GEMINI_API_KEY
         sync: false
       - key: MODEL_CACHE_DIR
