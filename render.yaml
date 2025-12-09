@@ -44,7 +44,7 @@ services:
     plan: free
     region: oregon
     runtime: python-3.11
-    buildCommand: cd ml-service && pip install --upgrade pip && pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    buildCommand: cd ml-service && pip install --upgrade pip setuptools wheel && pip install -r requirements.txt && python -m spacy download en_core_web_sm
     startCommand: cd ml-service && uvicorn main:app --host 0.0.0.0 --port 8001
     envVars:
       - key: PORT
