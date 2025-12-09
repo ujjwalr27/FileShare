@@ -1,13 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database';
 import config from '../config';
 import { sendError } from '../utils/response';
-import { JWTPayload, UserResponse } from '../types';
-
-export interface AuthRequest extends Request {
-  user?: UserResponse;
-}
+import { JWTPayload, AuthRequest } from '../types';
 
 /**
  * Middleware to verify JWT token

@@ -375,18 +375,3 @@ See [backend/.env.example](backend\.env.example) for all available environment v
    - Activity timeline
    - Email notifications
 
-## Contributing
-
-This is a personal project, but suggestions are welcome!
-
-## License
-
-MIT License
-
-## Support
-
-For issues or questions, create an issue in the project repository.
-
----
-
-**Built with ❤️ using React, Node.js, and PostgreSQL**

@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 export interface User {
   id: string;
   email: string;
@@ -52,6 +54,7 @@ export interface File {
   deleted_at?: Date;
   created_at: Date;
   updated_at: Date;
+  metadata?: any;
 }
 
 export interface FileVersion {
@@ -123,7 +126,7 @@ export interface FileMetadata {
   processed_at: Date;
 }
 
-export interface AuthRequest extends Express.Request {
+export interface AuthRequest extends Request {
   user?: UserResponse;
 }
 

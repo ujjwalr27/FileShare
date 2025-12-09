@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middlewares/auth';
+import { AuthRequest } from '../types';
 import { sendSuccess, sendError, asyncHandler } from '../utils/response';
 import mlService from '../services/mlService';
 import ocrService from '../services/ocrService';
@@ -95,7 +95,7 @@ export const getRecommendations = asyncHandler(async (req: AuthRequest, res: Res
 
     const semanticResults = await mlService.semanticSearch(
       currentFile.original_name,
-      allFiles.map(f => ({
+      allFiles.map((f: any) => ({
         id: f.id,
         name: f.original_name,
         description: f.metadata?.description || ''
@@ -118,7 +118,7 @@ export const getRecommendations = asyncHandler(async (req: AuthRequest, res: Res
       [recommendedIds]
     );
 
-    const recommendations = recommendedFilesResult.rows.map(file => {
+    const recommendations = recommendedFilesResult.rows.map((file: any) => {
       const result = semanticResults.find(r => r.file_id === file.id);
       return {
         ...file,

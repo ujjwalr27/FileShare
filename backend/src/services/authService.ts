@@ -102,9 +102,7 @@ const generateToken = (user: UserResponse): string => {
     role: user.role,
   };
 
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn,
-  });
+  return jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn } as any);
 };
 
 /**

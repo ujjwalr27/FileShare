@@ -191,7 +191,7 @@ export const validateShare = async (options: ValidateShareOptions): Promise<{
     }
 
     // Check download limit
-    if (share.max_downloads !== null && share.download_count >= share.max_downloads) {
+    if (share.max_downloads !== null && share.max_downloads !== undefined && share.download_count >= share.max_downloads) {
       return { valid: false, error: 'Download limit reached' };
     }
 

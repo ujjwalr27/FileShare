@@ -181,7 +181,7 @@ curl -X GET http://localhost:5000/api/files/download/FILE_ID \
 ## 🔄 Migration Strategy
 
 ### **Option A: Fresh Deployment (Recommended)**
-- Start with Supabase Storage from day 1
+
 - Set `USE_SUPABASE_STORAGE=true` from the beginning
 
 ### **Option B: Migrate Existing Files**
@@ -226,11 +226,7 @@ async function migrateToSupabase() {
 - ✅ 2GB bandwidth/month
 - ✅ 50MB max file size (configurable up to 5GB on pro)
 
-### **If You Need More:**
-- Supabase Pro: $25/month
-  - 100GB storage
-  - 200GB bandwidth
-  - Custom limits
+
 
 ## 🔐 Security Note
 

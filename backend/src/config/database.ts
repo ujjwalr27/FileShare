@@ -7,7 +7,7 @@ pool.on('connect', () => {
   console.log('✅ Database connected successfully');
 });
 
-pool.on('error', (err) => {
+pool.on('error', (err: Error) => {
   console.error('❌ Unexpected database error:', err);
   process.exit(-1);
 });
@@ -25,9 +25,9 @@ export const query = async (text: string, params?: any[]) => {
 };
 
 export const getClient = async () => {
-  const client = await pool.connect();
-  const query = client.query;
-  const release = client.release;
+  const client: any = await pool.connect();
+  const originalQuery = client.query;
+  const originalRelease = client.release;
 
   // Set a timeout of 5 seconds, after which we will log this client's last query
   const timeout = setTimeout(() => {
@@ -37,16 +37,16 @@ export const getClient = async () => {
   // Monkey patch the query method to keep track of the last query executed
   client.query = (...args: any[]) => {
     client.lastQuery = args;
-    return query.apply(client, args as any);
+    return originalQuery.apply(client, args);
   };
 
   client.release = () => {
     // Clear timeout
     clearTimeout(timeout);
     // Set the methods back to their old un-monkey-patched version
-    client.query = query;
-    client.release = release;
-    return release.apply(client);
+    client.query = originalQuery;
+    client.release = originalRelease;
+    return originalRelease.apply(client);
   };
 
   return client;

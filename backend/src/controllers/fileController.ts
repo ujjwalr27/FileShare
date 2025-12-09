@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { AuthRequest } from '../middlewares/auth';
+import { AuthRequest } from '../types';
 import { sendSuccess, sendError, asyncHandler } from '../utils/response';
 import * as fileService from '../services/fileService';
 import { query } from '../config/database';

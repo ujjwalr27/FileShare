@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as shareService from '../services/shareService';
 import * as fileService from '../services/fileService';
-import { AuthRequest } from '../middlewares/auth';
+import { AuthRequest } from '../types';
 
 /**
  * Create a new share link for a file
