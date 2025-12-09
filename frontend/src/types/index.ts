@@ -26,6 +26,9 @@ export interface File {
   deleted_at?: string;
   created_at: string;
   updated_at: string;
+  metadata?: any;
+  pii_warning?: any;
+  file?: File; // For nested file references
 }
 
 export interface Folder {

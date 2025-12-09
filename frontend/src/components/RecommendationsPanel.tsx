@@ -11,6 +11,19 @@ interface RecommendationFile {
   created_at: string;
   similarity: number;
   reason: string;
+  // Additional properties from File interface for compatibility
+  user_id?: string;
+  folder_id?: string;
+  name?: string;
+  path?: string;
+  extension?: string;
+  hash?: string;
+  version?: number;
+  is_deleted?: boolean;
+  deleted_at?: string;
+  updated_at?: string;
+  metadata?: any;
+  pii_warning?: boolean;
 }
 
 interface RecommendationsPanelProps {

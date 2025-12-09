@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Trash2, X, AlertCircle } from 'lucide-react';
+import { Copy, Trash2, AlertCircle } from 'lucide-react';
 import mlService from '../services/mlService';
 import toast from 'react-hot-toast';
 

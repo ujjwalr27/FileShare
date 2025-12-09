@@ -14,14 +14,11 @@ import {
   FolderOpen,
   Folder as FolderIcon,
   FolderPlus,
-  Edit2,
-  Move,
   Share2,
   HardDrive,
   Copy,
   ScanText,
   FileText,
-  AlertTriangle,
   Filter,
   Sparkles
 } from 'lucide-react';
@@ -142,9 +139,9 @@ const Dashboard = () => {
       const response = await fileService.uploadFile(file as any, currentFolderId);
       
       // Check for PII warning
-      if (response.pii_warning && response.pii_warning.has_pii) {
+      if (response.pii_warning && (response.pii_warning as any).has_pii) {
         setPIIWarning(response.pii_warning);
-        setPIIFile(response.file);
+        setPIIFile(response.file || null);
         setShowPIIModal(true);
       } else {
         toast.success('File uploaded successfully!');
@@ -172,7 +169,7 @@ const Dashboard = () => {
     if (piiFile) {
       try {
         await fileService.deleteFile(piiFile.id);
-        toast.info('Upload cancelled, file removed');
+        toast('Upload cancelled, file removed', { icon: 'ℹ️' });
         loadFolderContents();
       } catch (error) {
         console.error('Failed to delete file:', error);
@@ -887,7 +884,7 @@ const Dashboard = () => {
         fileName={recommendationsFileName}
         isOpen={showRecommendations}
         onClose={() => setShowRecommendations(false)}
-        onDownload={handleDownload}
+        onDownload={(file) => handleDownload(file as File)}
         onShare={(file) => setShareModalFile({ id: file.id, name: file.original_name })}
       />
 

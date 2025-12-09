@@ -43,7 +43,8 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
           ...prev,
           bullets: result.bullets || [],
           num_points: result.num_points,
-          method: result.method
+          method: result.method,
+          original_length: prev?.original_length || 0
         }));
         toast.success('Bullet points generated!');
       } catch (error) {
