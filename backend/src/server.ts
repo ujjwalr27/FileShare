@@ -29,6 +29,24 @@ app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use(morgan('dev')); // Request logging
 
+// Root route - Welcome message
+app.get('/', (req, res) => {
+  res.json({
+    message: 'File Management System API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      auth: '/api/auth',
+      files: '/api/files',
+      folders: '/api/folders',
+      shares: '/api/shares',
+      ml: '/api/ml'
+    },
+    documentation: 'Check README.md for API documentation'
+  });
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
