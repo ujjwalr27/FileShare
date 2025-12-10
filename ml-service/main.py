@@ -52,6 +52,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Root endpoint
+@app.get("/")
+async def root():
+    return {
+        "service": "FileShare ML Service",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "/health",
+            "categorization": "/api/categorization",
+            "semantic_search": "/api/semantic-search",
+            "pii_detection": "/api/pii",
+            "ocr": "/api/ocr",
+            "summarization": "/api/summarization"
+        }
+    }
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
