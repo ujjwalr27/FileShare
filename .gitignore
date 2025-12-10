@@ -48,7 +48,7 @@ temp/
 tmp/
 
 # ML Models (auto-downloaded on deployment)
-ml-service/models/
+ml_service/models/
 __pycache__/
 *.pyc
 *.pyo
