@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
-from app.services.categorization import FileCategorizer
+from ml_service.app.services.categorization import FileCategorizer
 
 router = APIRouter()
 

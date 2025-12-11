@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional
 
-from app.services.semantic_search import SemanticSearch
+from ml_service.app.services.semantic_search import SemanticSearch
 
 router = APIRouter()
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 
-from app.services.pii_detection import PIIDetector
+from ml_service.app.services.pii_detection import PIIDetector
 
 router = APIRouter()
 
