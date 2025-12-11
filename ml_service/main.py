@@ -4,8 +4,8 @@ from contextlib import asynccontextmanager
 import uvicorn
 from dotenv import load_dotenv
 
-from app.routes import categorization, semantic_search, pii_detection, ocr, summarization
-from app.services.model_manager import ModelManager
+from ml_service.app.routes import categorization, semantic_search, pii_detection, ocr, summarization
+from ml_service.app.services.model_manager import ModelManager
 
 # Load environment variables from .env file
 load_dotenv()
