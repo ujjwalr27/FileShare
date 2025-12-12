@@ -65,7 +65,25 @@ export const config = {
   },
 
   cors: {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    // Support multiple origins (comma-separated in CORS_ORIGIN env var)
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+        .split(',')
+        .map(o => o.trim());
+
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        console.log(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   },
 
