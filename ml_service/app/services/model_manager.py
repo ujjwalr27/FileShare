@@ -4,10 +4,13 @@ Only one model is loaded at a time to optimize memory usage on systems with 8GB 
 """
 
 import gc
-from typing import Optional, Literal
-from sentence_transformers import SentenceTransformer
-import spacy
-import torch
+from typing import Optional, Literal, TYPE_CHECKING
+
+# Lazy imports - these are slow and block server startup
+# Only import type hints for IDE support
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+    import spacy
 
 ModelType = Literal["semantic_search", "pii_detection"]
 
@@ -19,8 +22,8 @@ class ModelManager:
 
     def __init__(self):
         self.current_model: Optional[str] = None
-        self.semantic_model: Optional[SentenceTransformer] = None
-        self.pii_model: Optional[spacy.Language] = None
+        self.semantic_model = None  # Lazy: SentenceTransformer
+        self.pii_model = None  # Lazy: spacy.Language
 
     def _unload_all_models(self):
         """Unload all models to free memory."""
@@ -35,13 +38,17 @@ class ModelManager:
         # Force garbage collection
         gc.collect()
 
-        # Clear PyTorch cache if available
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        # Clear PyTorch cache if available (lazy import)
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except ImportError:
+            pass
 
         self.current_model = None
 
-    def get_semantic_model(self) -> SentenceTransformer:
+    def get_semantic_model(self):
         """
         Get the semantic search model (MiniLM-L3-v2).
         Unloads other models if necessary.
@@ -58,6 +65,9 @@ class ModelManager:
                 os.makedirs(cache_dir, exist_ok=True)
                 
                 print(f"Using cache directory: {cache_dir}")
+                
+                # Lazy import - only load when needed
+                from sentence_transformers import SentenceTransformer
                 
                 # Use the more common and stable all-MiniLM-L6-v2 model
                 self.semantic_model = SentenceTransformer(
@@ -77,7 +87,7 @@ class ModelManager:
 
         return self.semantic_model
 
-    def get_pii_model(self) -> spacy.Language:
+    def get_pii_model(self):
         """
         Get the PII detection model (spaCy).
         Unloads other models if necessary.
@@ -87,6 +97,8 @@ class ModelManager:
             self._unload_all_models()
 
             try:
+                # Lazy import spacy
+                import spacy
                 # Try to load the model if it's already downloaded
                 self.pii_model = spacy.load("en_core_web_sm")
             except OSError:
@@ -94,6 +106,7 @@ class ModelManager:
                 print("📦 Downloading spaCy model (one-time only)...")
                 import subprocess
                 subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
+                import spacy
                 self.pii_model = spacy.load("en_core_web_sm")
 
             self.current_model = "pii_detection"

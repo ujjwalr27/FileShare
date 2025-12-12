@@ -4,8 +4,10 @@ Provides intelligent file search based on meaning rather than exact keyword matc
 """
 
 import numpy as np
-from typing import List, Dict, Tuple
-from sentence_transformers import SentenceTransformer
+from typing import List, Dict, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 class SemanticSearch:
     """

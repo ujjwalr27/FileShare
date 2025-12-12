@@ -4,8 +4,10 @@ Uses spaCy NER (Named Entity Recognition) to detect potential PII in text.
 """
 
 import re
-from typing import List, Dict, Set
-import spacy
+from typing import List, Dict, Set, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import spacy
 
 class PIIDetector:
     """
