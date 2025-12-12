@@ -137,7 +137,7 @@ const Dashboard = () => {
 
     try {
       const response = await fileService.uploadFile(file as any, currentFolderId);
-      
+
       // Check for PII warning
       if (response.pii_warning && (response.pii_warning as any).has_pii) {
         setPIIWarning(response.pii_warning);
@@ -146,7 +146,7 @@ const Dashboard = () => {
       } else {
         toast.success('File uploaded successfully!');
       }
-      
+
       loadFolderContents();
       // Refresh user data to update storage display
       refreshUser();
@@ -201,52 +201,52 @@ const Dashboard = () => {
   };
 
   const handleExtractText = async (fileId: string, fileName: string) => {
-    const toastId = toast.loading('🔍 Extracting text from image/PDF...', { 
+    const toastId = toast.loading('🔍 Extracting text from image/PDF...', {
       duration: Infinity,
       icon: '⏳'
     });
-    
+
     try {
       const result = await mlService.extractTextOCR(fileId);
-      toast.success(`✅ Text extracted! ${result.word_count} words found`, { 
+      toast.success(`✅ Text extracted! ${result.word_count} words found`, {
         id: toastId,
-        duration: 4000 
+        duration: 4000
       });
-      
+
       // Show result in modal
       setOCRResult(result);
       setOCRFileName(fileName);
       setShowOCRModal(true);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || '❌ OCR extraction failed', { 
+      toast.error(error.response?.data?.error || '❌ OCR extraction failed', {
         id: toastId,
-        duration: 4000 
+        duration: 4000
       });
     }
   };
 
   const handleSummarize = async (fileId: string, fileName: string) => {
-    const toastId = toast.loading('📝 Generating summary...', { 
+    const toastId = toast.loading('📝 Generating summary...', {
       duration: Infinity,
       icon: '⏳'
     });
-    
+
     try {
       const result = await mlService.summarizeFile(fileId, { num_sentences: 3 });
-      toast.success('✅ Summary generated!', { 
+      toast.success('✅ Summary generated!', {
         id: toastId,
-        duration: 4000 
+        duration: 4000
       });
-      
+
       // Show result in modal
       setSummaryResult(result);
       setSummaryFileId(fileId);
       setSummaryFileName(fileName);
       setShowSummaryModal(true);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || '❌ Summarization failed', { 
+      toast.error(error.response?.data?.error || '❌ Summarization failed', {
         id: toastId,
-        duration: 4000 
+        duration: 4000
       });
     }
   };
@@ -276,7 +276,11 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  const formatFileSize = (bytes: number): string => {
+  const formatFileSize = (bytes: number | null | undefined): string => {
+    // Handle NaN, undefined, null, or invalid values
+    if (bytes === null || bytes === undefined || isNaN(bytes) || bytes < 0) {
+      return '0 Bytes';
+    }
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -304,9 +308,9 @@ const Dashboard = () => {
 
         switch (filters.category) {
           case 'documents':
-            matches = mimeType.includes('pdf') || mimeType.includes('document') || 
-                     mimeType.includes('text') || mimeType.includes('msword') ||
-                     mimeType.includes('wordprocessingml');
+            matches = mimeType.includes('pdf') || mimeType.includes('document') ||
+              mimeType.includes('text') || mimeType.includes('msword') ||
+              mimeType.includes('wordprocessingml');
             break;
           case 'images':
             matches = mimeType.includes('image');
@@ -318,15 +322,15 @@ const Dashboard = () => {
             matches = mimeType.includes('audio');
             break;
           case 'archives':
-            matches = mimeType.includes('zip') || mimeType.includes('rar') || 
-                     mimeType.includes('tar') || mimeType.includes('7z') ||
-                     mimeType.includes('compressed');
+            matches = mimeType.includes('zip') || mimeType.includes('rar') ||
+              mimeType.includes('tar') || mimeType.includes('7z') ||
+              mimeType.includes('compressed');
             break;
           case 'code':
             matches = mimeType.includes('javascript') || mimeType.includes('python') ||
-                     mimeType.includes('java') || mimeType.includes('html') ||
-                     mimeType.includes('css') || mimeType.includes('json') ||
-                     file.original_name.match(/\.(js|ts|py|java|cpp|c|html|css|json|xml|sql)$/i) !== null;
+              mimeType.includes('java') || mimeType.includes('html') ||
+              mimeType.includes('css') || mimeType.includes('json') ||
+              file.original_name.match(/\.(js|ts|py|java|cpp|c|html|css|json|xml|sql)$/i) !== null;
             break;
         }
 
@@ -381,11 +385,11 @@ const Dashboard = () => {
             break;
           case 'spreadsheet':
             matches = mimeType.includes('spreadsheet') || mimeType.includes('excel') ||
-                     fileName.match(/\.(xlsx?|csv)$/i) !== null;
+              fileName.match(/\.(xlsx?|csv)$/i) !== null;
             break;
           case 'presentation':
             matches = mimeType.includes('presentation') || mimeType.includes('powerpoint') ||
-                     fileName.match(/\.(pptx?|odp)$/i) !== null;
+              fileName.match(/\.(pptx?|odp)$/i) !== null;
             break;
         }
 
@@ -470,21 +474,19 @@ const Dashboard = () => {
           <div className="flex border-b">
             <button
               onClick={() => setActiveTab('files')}
-              className={`flex-1 px-6 py-4 font-semibold transition-all ${
-                activeTab === 'files'
+              className={`flex-1 px-6 py-4 font-semibold transition-all ${activeTab === 'files'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
+                }`}
             >
               📁 My Files
             </button>
             <button
               onClick={() => setActiveTab('duplicates')}
-              className={`flex-1 px-6 py-4 font-semibold transition-all ${
-                activeTab === 'duplicates'
+              className={`flex-1 px-6 py-4 font-semibold transition-all ${activeTab === 'duplicates'
                   ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
+                }`}
             >
               <Copy size={18} className="inline mr-2" />
               Duplicates
@@ -495,346 +497,345 @@ const Dashboard = () => {
         {/* Files Tab Content */}
         {activeTab === 'files' && (
           <>
-        {/* Actions Bar */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
-          <div className="flex flex-col gap-4">
-            {/* Search Row */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between">
-              <form onSubmit={handleSearch} className="flex gap-3 flex-1">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search files and folders..."
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-4 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all flex items-center gap-2 ${
-                    showFilters
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  <Filter size={18} />
-                  Filters
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-lg hover:from-gray-800 hover:to-gray-900 font-medium shadow-md hover:shadow-lg transition-all"
-                >
-                  Search
-                </button>
-              </form>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsCreateFolderModalOpen(true)}
-                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 font-medium shadow-md hover:shadow-lg transition-all transform hover:scale-105"
-                >
-                  <FolderPlus size={18} />
-                  New Folder
-                </button>
-
-                <label className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-md hover:shadow-lg transition-all transform hover:scale-105 cursor-pointer">
-                  <Upload size={18} />
-                  {isUploading ? 'Uploading...' : 'Upload File'}
-                  <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={isUploading}
-                  />
-                </label>
-              </div>
-            </div>
-
-            {/* Filters Panel */}
-            {showFilters && (
-              <div className="pt-4 border-t border-gray-200">
-                <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                  <Filter size={16} />
-                  Filter Files
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
-                    <select
-                      value={filters.category}
-                      onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            {/* Actions Bar */}
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
+              <div className="flex flex-col gap-4">
+                {/* Search Row */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                  <form onSubmit={handleSearch} className="flex gap-3 flex-1">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search files and folders..."
+                        className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className={`px-4 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all flex items-center gap-2 ${showFilters
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
-                      <option value="all">All Categories</option>
-                      <option value="documents">📄 Documents</option>
-                      <option value="images">🖼️ Images</option>
-                      <option value="videos">🎥 Videos</option>
-                      <option value="audio">🎵 Audio</option>
-                      <option value="archives">📦 Archives</option>
-                      <option value="code">💻 Code</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">Date Range</label>
-                    <select
-                      value={filters.dateRange}
-                      onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      <Filter size={18} />
+                      Filters
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-lg hover:from-gray-800 hover:to-gray-900 font-medium shadow-md hover:shadow-lg transition-all"
                     >
-                      <option value="all">Any Time</option>
-                      <option value="today">Today</option>
-                      <option value="week">Last 7 Days</option>
-                      <option value="month">Last Month</option>
-                      <option value="year">Last Year</option>
-                    </select>
-                  </div>
+                      Search
+                    </button>
+                  </form>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">PII Status</label>
-                    <select
-                      value={filters.hasPII}
-                      onChange={(e) => setFilters({ ...filters, hasPII: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setIsCreateFolderModalOpen(true)}
+                      className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 font-medium shadow-md hover:shadow-lg transition-all transform hover:scale-105"
                     >
-                      <option value="all">All Files</option>
-                      <option value="withPII">⚠️ With PII</option>
-                      <option value="withoutPII">✅ Without PII</option>
-                    </select>
-                  </div>
+                      <FolderPlus size={18} />
+                      New Folder
+                    </button>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1">File Type</label>
-                    <select
-                      value={filters.fileType}
-                      onChange={(e) => setFilters({ ...filters, fileType: e.target.value })}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    >
-                      <option value="all">All Types</option>
-                      <option value="pdf">PDF</option>
-                      <option value="image">Images</option>
-                      <option value="text">Text</option>
-                      <option value="spreadsheet">Spreadsheets</option>
-                      <option value="presentation">Presentations</option>
-                    </select>
+                    <label className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-medium shadow-md hover:shadow-lg transition-all transform hover:scale-105 cursor-pointer">
+                      <Upload size={18} />
+                      {isUploading ? 'Uploading...' : 'Upload File'}
+                      <input
+                        type="file"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        disabled={isUploading}
+                      />
+                    </label>
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  <button
-                    onClick={() => {
-                      setFilters({ category: 'all', dateRange: 'all', hasPII: 'all', fileType: 'all' });
-                      toast.success('Filters cleared');
-                    }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium"
-                  >
-                    Clear Filters
-                  </button>
-                  <div className="text-sm text-gray-600 flex items-center px-3">
-                    {filteredFiles.length !== files.length && (
-                      <span className="font-semibold">
-                        Showing {filteredFiles.length} of {files.length} files
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Files and Folders List */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200">
-          <div className="px-6 py-4 border-b-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <FolderOpen size={22} className="text-blue-600" />
-              {searchQuery ? 'Search Results' : currentFolderId ? 'Current Folder' : 'My Files'}
-            </h2>
-          </div>
-
-          {isLoading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600 font-medium">Loading...</p>
-            </div>
-          ) : folders.length === 0 && filteredFiles.length === 0 ? (
-            <div className="p-12 text-center">
-              <FolderOpen size={64} className="mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium text-gray-600 mb-2">
-                {searchQuery ? 'No results found' : filteredFiles.length === 0 && files.length > 0 ? 'No files match the filters' : 'This folder is empty'}
-              </p>
-              <p className="text-sm text-gray-500">
-                {searchQuery ? 'Try a different search term' : filteredFiles.length === 0 && files.length > 0 ? 'Try adjusting your filter criteria' : 'Upload files or create folders to get started'}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {/* Folders Section */}
-              {folders.length > 0 && !searchQuery && (
-                <div className="p-6">
-                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <FolderIcon size={16} className="text-blue-600" />
-                    Folders ({folders.length})
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {folders.map((folder) => (
-                      <div
-                        key={folder.id}
-                        className="group relative border-2 border-gray-200 rounded-xl p-5 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-white"
-                      >
-                        <div
-                          onClick={() => handleNavigateToFolder(folder.id)}
-                          className="flex items-start gap-3"
+                {/* Filters Panel */}
+                {showFilters && (
+                  <div className="pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <Filter size={16} />
+                      Filter Files
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Category</label>
+                        <select
+                          value={filters.category}
+                          onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         >
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <FolderIcon size={32} className="text-blue-600 flex-shrink-0" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-900 truncate mb-1" title={folder.name}>
-                              {folder.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatDate(folder.created_at)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFolder(folder.id);
-                            }}
-                            className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-md transition-all"
-                            title="Delete folder"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
+                          <option value="all">All Categories</option>
+                          <option value="documents">📄 Documents</option>
+                          <option value="images">🖼️ Images</option>
+                          <option value="videos">🎥 Videos</option>
+                          <option value="audio">🎵 Audio</option>
+                          <option value="archives">📦 Archives</option>
+                          <option value="code">💻 Code</option>
+                        </select>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Files Section */}
-              {filteredFiles.length > 0 && (
-                <div className="p-6">
-                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Download size={16} className="text-blue-600" />
-                    Files ({filteredFiles.length})
-                    {filteredFiles.length !== files.length && (
-                      <span className="text-xs text-gray-500 font-normal ml-2">
-                        (filtered from {files.length})
-                      </span>
-                    )}
-                  </h3>
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gradient-to-r from-gray-100 to-blue-50">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Name
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Size
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Uploaded
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredFiles.map((file) => (
-                          <tr key={file.id} className="hover:bg-blue-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 rounded-lg">
-                                  <Download size={18} className="text-blue-600" />
-                                </div>
-                                <div>
-                                  <div className="text-sm font-semibold text-gray-900">{file.original_name}</div>
-                                  <div className="text-xs text-gray-500">{file.mime_type}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
-                              {formatFileSize(file.size)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {formatDate(file.created_at)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <div className="flex gap-2 flex-wrap">
-                                <button
-                                  onClick={() => setShareModalFile({ id: file.id, name: file.original_name })}
-                                  className="p-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                  title="Share"
-                                >
-                                  <Share2 size={18} />
-                                </button>
-                                <button
-                                  onClick={() => handleDownload(file)}
-                                  className="p-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                  title="Download"
-                                >
-                                  <Download size={18} />
-                                </button>
-                                {(file.mime_type?.includes('image') || file.mime_type?.includes('pdf')) && (
-                                  <button
-                                    onClick={() => handleExtractText(file.id, file.original_name)}
-                                    className="p-2 text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                    title="Extract Text (OCR)"
-                                  >
-                                    <ScanText size={18} />
-                                  </button>
-                                )}
-                                {(file.mime_type?.includes('text') || file.mime_type?.includes('pdf')) && (
-                                  <button
-                                    onClick={() => handleSummarize(file.id, file.original_name)}
-                                    className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                    title="Summarize"
-                                  >
-                                    <FileText size={18} />
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => {
-                                    setRecommendationsFileId(file.id);
-                                    setRecommendationsFileName(file.original_name);
-                                    setShowRecommendations(true);
-                                  }}
-                                  className="p-2 text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                  title="Similar Files"
-                                >
-                                  <Sparkles size={18} />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(file.id)}
-                                  className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                  title="Delete"
-                                >
-                                  <Trash2 size={18} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Date Range</label>
+                        <select
+                          value={filters.dateRange}
+                          onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                          <option value="all">Any Time</option>
+                          <option value="today">Today</option>
+                          <option value="week">Last 7 Days</option>
+                          <option value="month">Last Month</option>
+                          <option value="year">Last Year</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">PII Status</label>
+                        <select
+                          value={filters.hasPII}
+                          onChange={(e) => setFilters({ ...filters, hasPII: e.target.value })}
+                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                          <option value="all">All Files</option>
+                          <option value="withPII">⚠️ With PII</option>
+                          <option value="withoutPII">✅ Without PII</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">File Type</label>
+                        <select
+                          value={filters.fileType}
+                          onChange={(e) => setFilters({ ...filters, fileType: e.target.value })}
+                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        >
+                          <option value="all">All Types</option>
+                          <option value="pdf">PDF</option>
+                          <option value="image">Images</option>
+                          <option value="text">Text</option>
+                          <option value="spreadsheet">Spreadsheets</option>
+                          <option value="presentation">Presentations</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => {
+                          setFilters({ category: 'all', dateRange: 'all', hasPII: 'all', fileType: 'all' });
+                          toast.success('Filters cleared');
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm font-medium"
+                      >
+                        Clear Filters
+                      </button>
+                      <div className="text-sm text-gray-600 flex items-center px-3">
+                        {filteredFiles.length !== files.length && (
+                          <span className="font-semibold">
+                            Showing {filteredFiles.length} of {files.length} files
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Files and Folders List */}
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200">
+              <div className="px-6 py-4 border-b-2 border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
+                <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <FolderOpen size={22} className="text-blue-600" />
+                  {searchQuery ? 'Search Results' : currentFolderId ? 'Current Folder' : 'My Files'}
+                </h2>
+              </div>
+
+              {isLoading ? (
+                <div className="p-12 text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600 font-medium">Loading...</p>
+                </div>
+              ) : folders.length === 0 && filteredFiles.length === 0 ? (
+                <div className="p-12 text-center">
+                  <FolderOpen size={64} className="mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium text-gray-600 mb-2">
+                    {searchQuery ? 'No results found' : filteredFiles.length === 0 && files.length > 0 ? 'No files match the filters' : 'This folder is empty'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {searchQuery ? 'Try a different search term' : filteredFiles.length === 0 && files.length > 0 ? 'Try adjusting your filter criteria' : 'Upload files or create folders to get started'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {/* Folders Section */}
+                  {folders.length > 0 && !searchQuery && (
+                    <div className="p-6">
+                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <FolderIcon size={16} className="text-blue-600" />
+                        Folders ({folders.length})
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {folders.map((folder) => (
+                          <div
+                            key={folder.id}
+                            className="group relative border-2 border-gray-200 rounded-xl p-5 hover:border-blue-400 hover:shadow-lg transition-all cursor-pointer bg-gradient-to-br from-blue-50 to-white"
+                          >
+                            <div
+                              onClick={() => handleNavigateToFolder(folder.id)}
+                              className="flex items-start gap-3"
+                            >
+                              <div className="p-2 bg-blue-100 rounded-lg">
+                                <FolderIcon size={32} className="text-blue-600 flex-shrink-0" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-gray-900 truncate mb-1" title={folder.name}>
+                                  {folder.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {formatDate(folder.created_at)}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteFolder(folder.id);
+                                }}
+                                className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-md transition-all"
+                                title="Delete folder"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Files Section */}
+                  {filteredFiles.length > 0 && (
+                    <div className="p-6">
+                      <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <Download size={16} className="text-blue-600" />
+                        Files ({filteredFiles.length})
+                        {filteredFiles.length !== files.length && (
+                          <span className="text-xs text-gray-500 font-normal ml-2">
+                            (filtered from {files.length})
+                          </span>
+                        )}
+                      </h3>
+                      <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gradient-to-r from-gray-100 to-blue-50">
+                            <tr>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Name
+                              </th>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Size
+                              </th>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Uploaded
+                              </th>
+                              <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredFiles.map((file) => (
+                              <tr key={file.id} className="hover:bg-blue-50 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 rounded-lg">
+                                      <Download size={18} className="text-blue-600" />
+                                    </div>
+                                    <div>
+                                      <div className="text-sm font-semibold text-gray-900">{file.original_name}</div>
+                                      <div className="text-xs text-gray-500">{file.mime_type}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                                  {formatFileSize(file.size)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                  {formatDate(file.created_at)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <div className="flex gap-2 flex-wrap">
+                                    <button
+                                      onClick={() => setShareModalFile({ id: file.id, name: file.original_name })}
+                                      className="p-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow-md"
+                                      title="Share"
+                                    >
+                                      <Share2 size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDownload(file)}
+                                      className="p-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-sm hover:shadow-md"
+                                      title="Download"
+                                    >
+                                      <Download size={18} />
+                                    </button>
+                                    {(file.mime_type?.includes('image') || file.mime_type?.includes('pdf')) && (
+                                      <button
+                                        onClick={() => handleExtractText(file.id, file.original_name)}
+                                        className="p-2 text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all shadow-sm hover:shadow-md"
+                                        title="Extract Text (OCR)"
+                                      >
+                                        <ScanText size={18} />
+                                      </button>
+                                    )}
+                                    {(file.mime_type?.includes('text') || file.mime_type?.includes('pdf')) && (
+                                      <button
+                                        onClick={() => handleSummarize(file.id, file.original_name)}
+                                        className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-sm hover:shadow-md"
+                                        title="Summarize"
+                                      >
+                                        <FileText size={18} />
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => {
+                                        setRecommendationsFileId(file.id);
+                                        setRecommendationsFileName(file.original_name);
+                                        setShowRecommendations(true);
+                                      }}
+                                      className="p-2 text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-all shadow-sm hover:shadow-md"
+                                      title="Similar Files"
+                                    >
+                                      <Sparkles size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDelete(file.id)}
+                                      className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all shadow-sm hover:shadow-md"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
-        </>
+          </>
         )}
 
         {/* Duplicates Tab Content */}
