@@ -2,9 +2,10 @@
 PII (Personally Identifiable Information) Detection Service.
 Uses spaCy NER (Named Entity Recognition) to detect potential PII in text.
 """
+from __future__ import annotations
 
 import re
-from typing import List, Dict, Set, TYPE_CHECKING
+from typing import List, Dict, Set, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import spacy

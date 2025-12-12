@@ -2,6 +2,7 @@
 Model Manager for lazy loading ML models.
 Only one model is loaded at a time to optimize memory usage on systems with 8GB RAM.
 """
+from __future__ import annotations
 
 import gc
 from typing import Optional, Literal, TYPE_CHECKING

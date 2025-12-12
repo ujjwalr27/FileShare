@@ -2,9 +2,10 @@
 Semantic search service using sentence transformers.
 Provides intelligent file search based on meaning rather than exact keyword matching.
 """
+from __future__ import annotations
 
 import numpy as np
-from typing import List, Dict, Tuple, TYPE_CHECKING
+from typing import List, Dict, Tuple, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
