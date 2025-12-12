@@ -5,22 +5,38 @@ Provides document summarization, bullet points, and key insights
 import google.generativeai as genai
 from typing import Dict, Any, Optional, List
 import re
+import os
+from collections import Counter
+
+# NLTK imports - but don't download at import time
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
-from nltk.corpus import stopwords
-from collections import Counter
-import os
 
-# Download required NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
+# Lazy NLTK data loading flag
+_nltk_data_loaded = False
 
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords', quiet=True)
+def _ensure_nltk_data():
+    """Load NLTK data lazily on first use"""
+    global _nltk_data_loaded
+    if _nltk_data_loaded:
+        return
+    
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt', quiet=True)
+    
+    try:
+        nltk.data.find('tokenizers/punkt_tab')
+    except LookupError:
+        nltk.download('punkt_tab', quiet=True)
+    
+    try:
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        nltk.download('stopwords', quiet=True)
+    
+    _nltk_data_loaded = True
 
 class SummarizationService:
     """Service for generating text summaries using Google Gemini API"""
@@ -29,7 +45,16 @@ class SummarizationService:
         self.api_key = None
         self.model = None
         self.model_loaded = False
-        self.stop_words = set(stopwords.words('english'))
+        self._stop_words = None
+    
+    @property
+    def stop_words(self):
+        """Lazy load stop words on first use"""
+        if self._stop_words is None:
+            _ensure_nltk_data()
+            from nltk.corpus import stopwords
+            self._stop_words = set(stopwords.words('english'))
+        return self._stop_words
         
     def load_model(self):
         """Initialize Gemini API"""
@@ -538,6 +563,5 @@ Key sentences:"""
                 'success': False
             }
 
-# Global instance using Gemini API
-print("Initializing summarization service with Gemini API")
+# Global instance - lazy initialization, no blocking operations at import time
 summarization_service = SummarizationService()
