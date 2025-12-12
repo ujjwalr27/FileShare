@@ -31,9 +31,8 @@ aiohttp==3.9.1
 # Utilities
 python-dotenv==1.0.0
 
-# OCR dependencies
-pytesseract==0.3.10
-pdf2image==1.16.3
+# OCR via cloud API (no local Tesseract needed)
+# Uses OCR.space API - set OCR_SPACE_API_KEY env variable
 
 # Summarization with Gemini API
 google-generativeai>=0.3.0

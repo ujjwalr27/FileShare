@@ -14,10 +14,10 @@ async def extract_text(
     max_pages: Optional[int] = 10
 ):
     """
-    Extract text from image or PDF using OCR
+    Extract text from image or PDF using OCR.space API
     
     Supported formats:
-    - Images: jpg, jpeg, png, bmp, tiff, gif
+    - Images: jpg, jpeg, png, bmp, tiff, gif, webp
     - PDFs: Extract text from scanned pages
     
     Returns:
@@ -37,8 +37,8 @@ async def extract_text(
         content_type = file.content_type or ''
         filename = file.filename or ''
         
-        # Extract text
-        result = ocr_service.extract_text(file_data, content_type or filename)
+        # Extract text (now async)
+        result = await ocr_service.extract_text(file_data, content_type or filename)
         
         if not result['success']:
             raise HTTPException(status_code=400, detail=result.get('error', 'OCR failed'))
@@ -68,7 +68,7 @@ async def extract_from_url(url: str):
             file_data = response.content
             content_type = response.headers.get('content-type', '')
             
-            result = ocr_service.extract_text(file_data, content_type)
+            result = await ocr_service.extract_text(file_data, content_type)
             
             if not result['success']:
                 raise HTTPException(status_code=400, detail=result.get('error', 'OCR failed'))

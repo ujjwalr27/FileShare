@@ -1,35 +1,29 @@
 """
 OCR Service for text extraction from images and PDFs
+Uses OCR.space API - no local Tesseract installation needed
 """
-import pytesseract
-from PIL import Image
-import pdf2image
-import io
-import tempfile
+from __future__ import annotations
+
 import os
-from typing import Optional, Dict, Any
+import base64
+import httpx
+from typing import Dict, Any
+
 
 class OCRService:
-    """Service for extracting text from images and PDFs using OCR"""
+    """Service for extracting text from images and PDFs using OCR.space API"""
     
     def __init__(self):
-        # Try to find tesseract executable
-        # On Windows, it's usually in Program Files
-        possible_paths = [
-            r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-            r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
-            '/usr/bin/tesseract',
-            '/usr/local/bin/tesseract',
-        ]
+        self.api_key = os.getenv('OCR_SPACE_API_KEY', '')
+        self.api_url = 'https://api.ocr.space/parse/image'
         
-        for path in possible_paths:
-            if os.path.exists(path):
-                pytesseract.pytesseract.tesseract_cmd = path
-                break
+    def _is_available(self) -> bool:
+        """Check if OCR service is configured"""
+        return bool(self.api_key and self.api_key != 'your_ocr_space_api_key_here')
     
-    def extract_text_from_image(self, image_data: bytes) -> Dict[str, Any]:
+    async def extract_text_from_image(self, image_data: bytes) -> Dict[str, Any]:
         """
-        Extract text from an image using OCR
+        Extract text from an image using OCR.space API
         
         Args:
             image_data: Binary image data
@@ -37,36 +31,85 @@ class OCRService:
         Returns:
             Dictionary with extracted text and metadata
         """
+        if not self._is_available():
+            return {
+                'text': '',
+                'word_count': 0,
+                'confidence': 0,
+                'error': 'OCR service not configured. Please set OCR_SPACE_API_KEY.',
+                'success': False
+            }
+        
         try:
-            # Open image
-            image = Image.open(io.BytesIO(image_data))
+            # Convert image to base64
+            base64_image = base64.b64encode(image_data).decode('utf-8')
             
-            # Convert to RGB if needed
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
+            # Prepare request
+            payload = {
+                'apikey': self.api_key,
+                'base64Image': f'data:image/png;base64,{base64_image}',
+                'language': 'eng',
+                'isOverlayRequired': False,
+                'detectOrientation': True,
+                'scale': True,
+                'OCREngine': 2,  # OCR Engine 2 is more accurate
+            }
             
-            # Perform OCR
-            text = pytesseract.image_to_string(image, lang='eng')
+            # Call OCR.space API
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(self.api_url, data=payload)
+                result = response.json()
             
-            # Get additional data
-            data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+            # Parse response
+            if result.get('IsErroredOnProcessing', False):
+                error_message = result.get('ErrorMessage', ['OCR processing failed'])[0]
+                return {
+                    'text': '',
+                    'word_count': 0,
+                    'confidence': 0,
+                    'error': error_message,
+                    'success': False
+                }
             
-            # Calculate confidence
-            confidences = [int(conf) for conf in data['conf'] if conf != '-1']
-            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+            # Extract text from parsed results
+            parsed_results = result.get('ParsedResults', [])
+            if not parsed_results:
+                return {
+                    'text': '',
+                    'word_count': 0,
+                    'confidence': 0,
+                    'error': 'No text found in image',
+                    'success': False
+                }
+            
+            # Combine text from all parsed results
+            extracted_text = '\n'.join([
+                pr.get('ParsedText', '') for pr in parsed_results
+            ])
+            
+            # Calculate confidence (OCR.space returns exit code, not confidence)
+            # We'll estimate based on whether text was found
+            confidence = 85.0 if extracted_text.strip() else 0.0
             
             # Count words
-            words = text.split()
-            word_count = len(words)
+            word_count = len(extracted_text.split())
             
             return {
-                'text': text.strip(),
+                'text': extracted_text.strip(),
                 'word_count': word_count,
-                'confidence': round(avg_confidence, 2),
+                'confidence': confidence,
                 'language': 'eng',
                 'success': True
             }
             
+        except httpx.TimeoutException:
+            return {
+                'text': '',
+                'word_count': 0,
+                'confidence': 0,
+                'error': 'OCR request timed out. Please try again.',
+                'success': False
+            }
         except Exception as e:
             return {
                 'text': '',
@@ -76,66 +119,101 @@ class OCRService:
                 'success': False
             }
     
-    def extract_text_from_pdf(self, pdf_data: bytes, max_pages: int = 10) -> Dict[str, Any]:
+    async def extract_text_from_pdf(self, pdf_data: bytes, max_pages: int = 10) -> Dict[str, Any]:
         """
-        Extract text from PDF using OCR
+        Extract text from PDF using OCR.space API
         
         Args:
             pdf_data: Binary PDF data
-            max_pages: Maximum number of pages to process
+            max_pages: Maximum number of pages to process (OCR.space free tier limit)
             
         Returns:
             Dictionary with extracted text and metadata
         """
+        if not self._is_available():
+            return {
+                'text': '',
+                'word_count': 0,
+                'page_count': 0,
+                'confidence': 0,
+                'error': 'OCR service not configured. Please set OCR_SPACE_API_KEY.',
+                'success': False
+            }
+        
         try:
-            # Save PDF to temp file
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
-                temp_pdf.write(pdf_data)
-                temp_pdf_path = temp_pdf.name
+            # Convert PDF to base64
+            base64_pdf = base64.b64encode(pdf_data).decode('utf-8')
             
-            try:
-                # Convert PDF to images
-                images = pdf2image.convert_from_path(
-                    temp_pdf_path,
-                    dpi=300,
-                    first_page=1,
-                    last_page=min(max_pages, 100)  # Safety limit
-                )
-                
-                # Extract text from each page
-                all_text = []
-                total_confidence = 0
-                
-                for page_num, image in enumerate(images, 1):
-                    # Convert PIL image to bytes
-                    img_byte_arr = io.BytesIO()
-                    image.save(img_byte_arr, format='PNG')
-                    img_byte_arr.seek(0)
-                    
-                    # Extract text
-                    result = self.extract_text_from_image(img_byte_arr.read())
-                    
-                    if result['success'] and result['text']:
-                        all_text.append(f"--- Page {page_num} ---\n{result['text']}")
-                        total_confidence += result['confidence']
-                
-                # Combine results
-                combined_text = '\n\n'.join(all_text)
-                avg_confidence = total_confidence / len(images) if images else 0
-                
+            # Prepare request for PDF
+            payload = {
+                'apikey': self.api_key,
+                'base64Image': f'data:application/pdf;base64,{base64_pdf}',
+                'language': 'eng',
+                'isOverlayRequired': False,
+                'detectOrientation': True,
+                'scale': True,
+                'OCREngine': 2,
+                'filetype': 'PDF',
+            }
+            
+            # Call OCR.space API
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(self.api_url, data=payload)
+                result = response.json()
+            
+            # Parse response
+            if result.get('IsErroredOnProcessing', False):
+                error_message = result.get('ErrorMessage', ['OCR processing failed'])[0]
                 return {
-                    'text': combined_text.strip(),
-                    'word_count': len(combined_text.split()),
-                    'page_count': len(images),
-                    'confidence': round(avg_confidence, 2),
-                    'success': True
+                    'text': '',
+                    'word_count': 0,
+                    'page_count': 0,
+                    'confidence': 0,
+                    'error': error_message,
+                    'success': False
                 }
-                
-            finally:
-                # Clean up temp file
-                if os.path.exists(temp_pdf_path):
-                    os.unlink(temp_pdf_path)
-                    
+            
+            # Extract text from parsed results (one per page)
+            parsed_results = result.get('ParsedResults', [])
+            if not parsed_results:
+                return {
+                    'text': '',
+                    'word_count': 0,
+                    'page_count': 0,
+                    'confidence': 0,
+                    'error': 'No text found in PDF',
+                    'success': False
+                }
+            
+            # Combine text from all pages
+            all_text = []
+            for i, pr in enumerate(parsed_results, 1):
+                page_text = pr.get('ParsedText', '').strip()
+                if page_text:
+                    all_text.append(f"--- Page {i} ---\n{page_text}")
+            
+            combined_text = '\n\n'.join(all_text)
+            word_count = len(combined_text.split())
+            page_count = len(parsed_results)
+            confidence = 85.0 if combined_text.strip() else 0.0
+            
+            return {
+                'text': combined_text.strip(),
+                'word_count': word_count,
+                'page_count': page_count,
+                'confidence': confidence,
+                'success': True
+            }
+            
+        except httpx.TimeoutException:
+            return {
+                'text': '',
+                'word_count': 0,
+                'page_count': 0,
+                'confidence': 0,
+                'error': 'OCR request timed out. PDF may be too large.',
+                'success': False
+            }
         except Exception as e:
             return {
                 'text': '',
@@ -146,7 +224,7 @@ class OCRService:
                 'success': False
             }
     
-    def extract_text(self, file_data: bytes, file_type: str) -> Dict[str, Any]:
+    async def extract_text(self, file_data: bytes, file_type: str) -> Dict[str, Any]:
         """
         Extract text from file based on type
         
@@ -161,18 +239,19 @@ class OCRService:
         
         # Check if it's a PDF
         if 'pdf' in file_type or file_type.endswith('.pdf'):
-            return self.extract_text_from_pdf(file_data)
+            return await self.extract_text_from_pdf(file_data)
         
         # Check if it's an image
-        image_types = ['image/', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif']
+        image_types = ['image/', '.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.gif', '.webp']
         if any(img_type in file_type for img_type in image_types):
-            return self.extract_text_from_image(file_data)
+            return await self.extract_text_from_image(file_data)
         
         return {
             'text': '',
             'error': f'Unsupported file type: {file_type}',
             'success': False
         }
+
 
 # Global instance
 ocr_service = OCRService()
