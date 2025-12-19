@@ -9,6 +9,7 @@ interface OCRResult {
   confidence: number;
   page_count?: number;
   success: boolean;
+  error?: string;
 }
 
 interface SummarizationResult {
@@ -17,6 +18,7 @@ interface SummarizationResult {
   summary_length: number;
   compression_ratio: number;
   success: boolean;
+  error?: string;
 }
 
 interface BulletPointsResult {
@@ -24,6 +26,7 @@ interface BulletPointsResult {
   num_points: number;
   original_length: number;
   success: boolean;
+  error?: string;
 }
 
 class OCRService {
@@ -45,9 +48,6 @@ class OCRService {
     }
   }
 
-  /**
-   * Extract text from image or PDF using OCR
-   */
   async extractText(filePath: string, mimeType: string): Promise<OCRResult> {
     try {
       const formData = new FormData();
@@ -65,13 +65,40 @@ class OCRService {
       return response.data.data;
     } catch (error: any) {
       console.error('OCR extraction failed:', error.message);
-      throw new Error('OCR service unavailable');
+
+      // Handle timeout errors
+      if (error.code === 'ECONNABORTED') {
+        return {
+          text: '',
+          word_count: 0,
+          confidence: 0,
+          success: false,
+          error: 'OCR request timed out. The file may be too large or complex.'
+        };
+      }
+
+      // Handle network errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        return {
+          text: '',
+          word_count: 0,
+          confidence: 0,
+          success: false,
+          error: 'ML service is currently unavailable. Please try again later.'
+        };
+      }
+
+      // Handle other errors
+      return {
+        text: '',
+        word_count: 0,
+        confidence: 0,
+        success: false,
+        error: error.response?.data?.message || 'OCR extraction failed. Please try again.'
+      };
     }
   }
 
-  /**
-   * Summarize text content
-   */
   async summarizeText(
     text: string,
     options: {
@@ -95,16 +122,40 @@ class OCRService {
       return response.data.data;
     } catch (error: any) {
       console.error('Summarization failed:', error.message);
+
       if (error.code === 'ECONNABORTED') {
-        throw new Error('Summarization timed out - the document may be too large or the model is still loading');
+        return {
+          summary: '',
+          original_length: 0,
+          summary_length: 0,
+          compression_ratio: 0,
+          success: false,
+          error: 'Summarization timed out - the document may be too large or the model is still loading'
+        };
       }
-      throw new Error('Summarization service unavailable');
+
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        return {
+          summary: '',
+          original_length: 0,
+          summary_length: 0,
+          compression_ratio: 0,
+          success: false,
+          error: 'Summarization service is currently unavailable'
+        };
+      }
+
+      return {
+        summary: '',
+        original_length: 0,
+        summary_length: 0,
+        compression_ratio: 0,
+        success: false,
+        error: error.response?.data?.message || 'Summarization failed'
+      };
     }
   }
 
-  /**
-   * Generate bullet-point summary
-   */
   async generateBulletPoints(text: string, numPoints: number = 5): Promise<BulletPointsResult> {
     try {
       const response = await axios.post(
@@ -119,10 +170,34 @@ class OCRService {
       return response.data.data;
     } catch (error: any) {
       console.error('Bullet point generation failed:', error.message);
+
       if (error.code === 'ECONNABORTED') {
-        throw new Error('Bullet point generation timed out - the document may be too large or the model is still loading');
+        return {
+          bullets: [],
+          num_points: 0,
+          original_length: 0,
+          success: false,
+          error: 'Bullet point generation timed out - the document may be too large or the model is still loading'
+        };
       }
-      throw new Error('Bullet point generation service unavailable');
+
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        return {
+          bullets: [],
+          num_points: 0,
+          original_length: 0,
+          success: false,
+          error: 'Bullet point generation service is currently unavailable'
+        };
+      }
+
+      return {
+        bullets: [],
+        num_points: 0,
+        original_length: 0,
+        success: false,
+        error: error.response?.data?.message || 'Bullet point generation failed'
+      };
     }
   }
 

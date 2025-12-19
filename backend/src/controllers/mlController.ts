@@ -88,7 +88,7 @@ export const getRecommendations = asyncHandler(async (req: AuthRequest, res: Res
 
     // Use semantic search to find similar files
     const isAvailable = await mlService.isAvailable();
-    
+
     if (!isAvailable) {
       return sendSuccess(res, { recommendations: [] });
     }
@@ -105,7 +105,7 @@ export const getRecommendations = asyncHandler(async (req: AuthRequest, res: Res
 
     // Get full file details for recommendations
     const recommendedIds = semanticResults.map(r => r.file_id);
-    
+
     if (recommendedIds.length === 0) {
       return sendSuccess(res, { recommendations: [] });
     }
@@ -127,9 +127,9 @@ export const getRecommendations = asyncHandler(async (req: AuthRequest, res: Res
       };
     });
 
-    return sendSuccess(res, { 
+    return sendSuccess(res, {
       recommendations,
-      based_on: currentFile.original_name 
+      based_on: currentFile.original_name
     });
   } catch (error: any) {
     console.error('Error getting recommendations:', error);
@@ -166,14 +166,14 @@ export const scanFileForPII = asyncHandler(async (req: AuthRequest, res: Respons
 
     // Check if it's a text file
     const { isTextFile, extractTextFromFile } = require('../utils/textExtractor');
-    
+
     if (!isTextFile(file.mime_type, file.original_name)) {
       return sendError(res, 'PII detection only works on text files', 400);
     }
 
     // Extract text
     const textContent = await extractTextFromFile(file.path);
-    
+
     if (!textContent) {
       return sendError(res, 'Could not extract text from file', 400);
     }
@@ -266,6 +266,12 @@ export const extractTextOCR = asyncHandler(async (req: AuthRequest, res: Respons
   }
 
   try {
+    // Check if ML service is available
+    const isAvailable = await ocrService.isAvailable();
+    if (!isAvailable) {
+      return sendError(res, 'ML service is currently unavailable. Please try again later.', 503);
+    }
+
     // Get file details
     const fileResult = await query(
       'SELECT id, path, mime_type, original_name FROM files WHERE id = $1 AND user_id = $2 AND is_deleted = false',
@@ -289,8 +295,12 @@ export const extractTextOCR = asyncHandler(async (req: AuthRequest, res: Respons
     // Extract text using OCR
     const ocrResult = await ocrService.extractText(file.path, file.mime_type);
 
+    if (!ocrResult.success) {
+      return sendError(res, ocrResult.error || 'OCR extraction failed', 500);
+    }
+
     // Save OCR result to metadata
-    if (ocrResult.success && ocrResult.text) {
+    if (ocrResult.text) {
       await query(
         `UPDATE files SET metadata = jsonb_set(
            COALESCE(metadata, '{}'::jsonb),
@@ -309,7 +319,8 @@ export const extractTextOCR = asyncHandler(async (req: AuthRequest, res: Respons
 
     return sendSuccess(res, ocrResult);
   } catch (error: any) {
-    return sendError(res, error.message, 500);
+    console.error('OCR extraction error:', error);
+    return sendError(res, 'Failed to extract text from file. Please try again.', 500);
   }
 });
 
@@ -351,13 +362,13 @@ export const summarizeFile = asyncHandler(async (req: AuthRequest, res: Response
       // Try to extract text for text-based files only
       const textExtensions = ['.txt', '.csv', '.log', '.md', '.json', '.xml', '.html'];
       const fileExtension = path.extname(file.original_name).toLowerCase();
-      
+
       if (textExtensions.includes(fileExtension)) {
         textContent = await extractTextFromFile(file.path) || '';
       } else {
         // For PDFs, images, and other files, require OCR first
         return sendError(
-          res, 
+          res,
           'This file type requires OCR text extraction before summarization. Please run OCR on this file first using the /api/ml/ocr/:fileId endpoint.',
           400
         );
@@ -370,7 +381,7 @@ export const summarizeFile = asyncHandler(async (req: AuthRequest, res: Response
 
     // Generate summary based on format
     let result;
-    
+
     if (format === 'bullets') {
       result = await ocrService.generateBulletPoints(textContent, parseInt(num_sentences as string));
     } else {
@@ -379,25 +390,29 @@ export const summarizeFile = asyncHandler(async (req: AuthRequest, res: Response
       });
     }
 
-    // Save summary to metadata
-    if (result.success) {
-      await query(
-        `UPDATE files SET metadata = jsonb_set(
-           COALESCE(metadata, '{}'::jsonb),
-           '{summary}',
-           $1::jsonb
-         )
-         WHERE id = $2`,
-        [JSON.stringify({
-          ...result,
-          format,
-          generated_at: new Date().toISOString()
-        }), fileId]
-      );
+    // Check if summarization was successful
+    if (!result.success) {
+      return sendError(res, result.error || 'Summarization failed', 500);
     }
+
+    // Save summary to metadata
+    await query(
+      `UPDATE files SET metadata = jsonb_set(
+         COALESCE(metadata, '{}'::jsonb),
+         '{summary}',
+         $1::jsonb
+       )
+       WHERE id = $2`,
+      [JSON.stringify({
+        ...result,
+        format,
+        generated_at: new Date().toISOString()
+      }), fileId]
+    );
 
     return sendSuccess(res, result);
   } catch (error: any) {
-    return sendError(res, error.message, 500);
+    console.error('Summarization error:', error);
+    return sendError(res, 'Failed to summarize file. Please try again.', 500);
   }
 });
