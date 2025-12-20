@@ -83,29 +83,44 @@ class SemanticSearch:
 
         # Calculate similarities
         results = []
-        for file in files:
-            # Combine filename and description for better matching
-            text = file.get("name", "")
-            if file.get("description"):
-                text += " " + file["description"]
+        try:
+            for file in files:
+                # Combine filename and description for better matching
+                text = file.get("name", "")
+                if file.get("description"):
+                    text += " " + file["description"]
 
-            # Generate file embedding
-            file_embedding = SemanticSearch.generate_embedding(model, text)
+                # Generate file embedding
+                try:
+                    file_embedding = SemanticSearch.generate_embedding(model, text)
+                except Exception as e:
+                    print(f"Error generating embedding for file {file.get('name')}: {e}")
+                    continue
 
-            # Calculate similarity
-            similarity = SemanticSearch.cosine_similarity(query_embedding, file_embedding)
+                # Calculate similarity
+                try:
+                    similarity = SemanticSearch.cosine_similarity(query_embedding, file_embedding)
+                except Exception as e:
+                    print(f"Error calculating similarity for file {file.get('name')}: {e}")
+                    continue
 
-            if similarity >= threshold:
-                results.append({
-                    "file_id": file.get("id"),
-                    "name": file.get("name"),
-                    "similarity": similarity,
-                    "relevance_score": similarity  # Alias for clarity
-                })
+                if similarity >= threshold:
+                    results.append({
+                        "file_id": file.get("id"),
+                        "name": file.get("name"),
+                        "similarity": similarity,
+                        "relevance_score": similarity  # Alias for clarity
+                    })
 
-        # Sort by similarity (descending) and limit to top_k
-        results.sort(key=lambda x: x["similarity"], reverse=True)
-        return results[:top_k]
+            # Sort by similarity (descending) and limit to top_k
+            results.sort(key=lambda x: x["similarity"], reverse=True)
+            return results[:top_k]
+            
+        except Exception as e:
+            print(f"Error in search_files: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
 
     @staticmethod
     def generate_file_tags(model: SentenceTransformer, filename: str, content_preview: str = "") -> List[str]:

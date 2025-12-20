@@ -88,21 +88,35 @@ export const getRecommendations = asyncHandler(async (req: AuthRequest, res: Res
     }
 
     // Use semantic search to find similar files
+    console.log('Checking ML service availability for recommendations...');
     const isAvailable = await mlService.isAvailable();
 
     if (!isAvailable) {
+      console.log('ML service unavailable for recommendations');
       return sendSuccess(res, { recommendations: [] });
     }
 
-    const semanticResults = await mlService.semanticSearch(
-      currentFile.original_name,
-      allFiles.map((f: any) => ({
-        id: f.id,
-        name: f.original_name,
-        description: f.metadata?.description || ''
-      })),
-      { threshold: 0.4, top_k: 5 }
-    );
+    console.log(`Getting recommendations for file ${currentFile.original_name} against ${allFiles.length} files`);
+
+    let semanticResults;
+    try {
+      semanticResults = await mlService.semanticSearch(
+        currentFile.original_name,
+        allFiles.map((f: any) => ({
+          id: f.id,
+          name: f.original_name,
+          description: f.metadata?.description || ''
+        })),
+        { threshold: 0.4, top_k: 5 }
+      );
+      console.log(`Semantic search returned ${semanticResults?.length || 0} results`);
+    } catch (mlError: any) {
+      console.error('ML Service semantic search failed:', mlError.message);
+      if (mlError.response) {
+        console.error('ML Service response:', mlError.response.data);
+      }
+      return sendSuccess(res, { recommendations: [] });
+    }
 
     // Get full file details for recommendations
     const recommendedIds = semanticResults.map(r => r.file_id);
