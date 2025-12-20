@@ -432,35 +432,7 @@ const Dashboard = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        {/* Storage Info */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <HardDrive size={20} className="text-blue-600" />
-              </div>
-              Storage Usage
-            </h2>
-            <span className="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-              {storagePercentage.toFixed(1)}% used
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-6 shadow-inner">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-6 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
-              style={{ width: `${Math.min(storagePercentage, 100)}%` }}
-            >
-              {storagePercentage > 10 && (
-                <span className="text-xs font-bold text-white">
-                  {storagePercentage.toFixed(0)}%
-                </span>
-              )}
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mt-3 font-medium">
-            {formatFileSize(storageUsed)} of {formatFileSize(storageQuota)} used
-          </p>
-        </div>
+
 
         {/* Breadcrumb Navigation */}
         {!searchQuery && (
@@ -475,8 +447,8 @@ const Dashboard = () => {
             <button
               onClick={() => setActiveTab('files')}
               className={`flex-1 px-6 py-4 font-semibold transition-all ${activeTab === 'files'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
             >
               📁 My Files
@@ -484,8 +456,8 @@ const Dashboard = () => {
             <button
               onClick={() => setActiveTab('duplicates')}
               className={`flex-1 px-6 py-4 font-semibold transition-all ${activeTab === 'duplicates'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
             >
               <Copy size={18} className="inline mr-2" />
@@ -517,8 +489,8 @@ const Dashboard = () => {
                       type="button"
                       onClick={() => setShowFilters(!showFilters)}
                       className={`px-4 py-3 rounded-lg font-medium shadow-md hover:shadow-lg transition-all flex items-center gap-2 ${showFilters
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         }`}
                     >
                       <Filter size={18} />
