@@ -37,17 +37,114 @@ class OCRService {
   }
 
   /**
-   * Check if OCR service is available
+   * Check if OCR service is available with retry for cold starts
    */
   async isAvailable(): Promise<boolean> {
+    const maxRetries = 2;
+    const timeouts = [5000, 10000]; // 5s first try, 10s retry (for cold start)
+
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await axios.get(`${this.baseUrl}/health`, {
+          timeout: timeouts[i],
+          validateStatus: (status) => status < 500 // Accept any non-5xx response
+        });
+
+        // Check if service is ready (not just starting)
+        if (response.data?.status === 'ready' || response.status === 200) {
+          return true;
+        }
+
+        // Service is starting, wait a bit and retry
+        if (response.data?.status === 'starting' && i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          continue;
+        }
+
+        return response.status === 200;
+      } catch (error: any) {
+        console.log(`ML service health check attempt ${i + 1} failed:`, error.code || error.message);
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Extract text from file buffer (for files stored in cloud storage)
+   */
+  async extractTextFromBuffer(fileBuffer: Buffer, filename: string, mimeType: string): Promise<OCRResult> {
     try {
-      const response = await axios.get(`${this.baseUrl}/health`, { timeout: 2000 });
-      return response.status === 200;
-    } catch {
-      return false;
+      const formData = new FormData();
+      formData.append('file', fileBuffer, {
+        filename: filename,
+        contentType: mimeType,
+      });
+
+      const response = await axios.post(
+        `${this.baseUrl}/api/ocr/extract-text`,
+        formData,
+        {
+          headers: formData.getHeaders(),
+          timeout: 120000, // 120 seconds for OCR (2 minutes)
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        }
+      );
+
+      return response.data.data;
+    } catch (error: any) {
+      console.error('OCR extraction failed:', error.message);
+
+      // Handle timeout errors
+      if (error.code === 'ECONNABORTED') {
+        return {
+          text: '',
+          word_count: 0,
+          confidence: 0,
+          success: false,
+          error: 'OCR request timed out. The file may be too large or complex.'
+        };
+      }
+
+      // Handle network errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        return {
+          text: '',
+          word_count: 0,
+          confidence: 0,
+          success: false,
+          error: 'ML service is currently unavailable. Please try again later.'
+        };
+      }
+
+      // Handle 503 (service unavailable - cold start)
+      if (error.response?.status === 503) {
+        return {
+          text: '',
+          word_count: 0,
+          confidence: 0,
+          success: false,
+          error: 'ML service is starting up. Please wait a moment and try again.'
+        };
+      }
+
+      // Handle other errors
+      return {
+        text: '',
+        word_count: 0,
+        confidence: 0,
+        success: false,
+        error: error.response?.data?.detail || error.response?.data?.message || 'OCR extraction failed. Please try again.'
+      };
     }
   }
 
+  /**
+   * Extract text from local file path (legacy - for local development)
+   */
   async extractText(filePath: string, mimeType: string): Promise<OCRResult> {
     try {
       const formData = new FormData();

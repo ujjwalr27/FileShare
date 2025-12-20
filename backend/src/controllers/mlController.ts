@@ -7,6 +7,7 @@ import * as duplicateDetection from '../services/duplicateDetection';
 import { query } from '../config/database';
 import config from '../config';
 import { extractTextFromFile } from '../utils/textExtractor';
+import { StorageService } from '../services/storageService';
 import path from 'path';
 
 /**
@@ -266,10 +267,10 @@ export const extractTextOCR = asyncHandler(async (req: AuthRequest, res: Respons
   }
 
   try {
-    // Check if ML service is available
+    // Check if ML service is available (with retry for cold starts)
     const isAvailable = await ocrService.isAvailable();
     if (!isAvailable) {
-      return sendError(res, 'ML service is currently unavailable. Please try again later.', 503);
+      return sendError(res, 'ML service is currently unavailable. Please try again in a few moments.', 503);
     }
 
     // Get file details
@@ -292,8 +293,23 @@ export const extractTextOCR = asyncHandler(async (req: AuthRequest, res: Respons
       return sendError(res, 'OCR only works on images and PDFs', 400);
     }
 
-    // Extract text using OCR
-    const ocrResult = await ocrService.extractText(file.path, file.mime_type);
+    // Download file from Supabase Storage (files are stored in cloud, not local filesystem)
+    let fileBuffer: Buffer;
+    try {
+      console.log(`Downloading file from Supabase Storage: ${file.path}`);
+      fileBuffer = await StorageService.downloadFile(file.path);
+      console.log(`Downloaded file, size: ${fileBuffer.length} bytes`);
+    } catch (downloadError: any) {
+      console.error('Failed to download file from storage:', downloadError.message);
+      return sendError(res, 'Failed to access file. Please try again.', 500);
+    }
+
+    // Extract text using OCR with file buffer
+    const ocrResult = await ocrService.extractTextFromBuffer(
+      fileBuffer,
+      file.original_name,
+      file.mime_type
+    );
 
     if (!ocrResult.success) {
       return sendError(res, ocrResult.error || 'OCR extraction failed', 500);

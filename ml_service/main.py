@@ -22,7 +22,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import your routers and ModelManager
@@ -209,6 +209,14 @@ app.include_router(semantic_search.router, prefix="/api/semantic-search", tags=[
 app.include_router(pii_detection.router, prefix="/api/pii", tags=["pii-detection"])
 app.include_router(ocr.router, prefix="/api/ocr", tags=["ocr"])
 app.include_router(summarization.router, prefix="/api/summarization", tags=["summarization"])
+
+
+# HEAD method support for health checks (prevents 405 errors)
+@app.head("/")
+@app.head("/health")
+async def head_check():
+    """HEAD method support for health checks."""
+    return Response(status_code=200)
 
 
 # --------------------------- Local runner ---------------------------
