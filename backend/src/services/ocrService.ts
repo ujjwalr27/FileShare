@@ -40,24 +40,29 @@ class OCRService {
    * Check if OCR service is available with retry for cold starts
    */
   async isAvailable(): Promise<boolean> {
-    const maxRetries = 2;
-    const timeouts = [5000, 10000]; // 5s first try, 10s retry (for cold start)
+    const maxRetries = 5;
+    // Progressive timeouts: 5s, 10s, 15s, 20s, 30s
+    // Total wait time potential > 1 minute covering Render cold starts
+    const timeouts = [5000, 10000, 15000, 20000, 30000];
 
     for (let i = 0; i < maxRetries; i++) {
       try {
+        console.log(`Checking ML service health (attempt ${i + 1}/${maxRetries})...`);
         const response = await axios.get(`${this.baseUrl}/health`, {
-          timeout: timeouts[i],
+          timeout: timeouts[i] || 30000,
           validateStatus: (status) => status < 500 // Accept any non-5xx response
         });
 
         // Check if service is ready (not just starting)
         if (response.data?.status === 'ready' || response.status === 200) {
+          console.log('ML service is ready!');
           return true;
         }
 
         // Service is starting, wait a bit and retry
         if (response.data?.status === 'starting' && i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          console.log('ML service is starting...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
           continue;
         }
 
@@ -65,7 +70,9 @@ class OCRService {
       } catch (error: any) {
         console.log(`ML service health check attempt ${i + 1} failed:`, error.code || error.message);
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait longer between retries
+          const waitTime = 3000 * (i + 1);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
