@@ -15,7 +15,6 @@ import {
   Folder as FolderIcon,
   FolderPlus,
   Share2,
-  HardDrive,
   Copy,
   ScanText,
   FileText,
@@ -403,10 +402,7 @@ const Dashboard = () => {
   // Get filtered files
   const filteredFiles = applyFilters(files);
 
-  // Calculate storage with proper defaults
-  const storageUsed = user?.storage_used || 0;
-  const storageQuota = user?.storage_quota || 5368709120; // 5 GB default
-  const storagePercentage = storageQuota > 0 ? (storageUsed / storageQuota) * 100 : 0;
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
