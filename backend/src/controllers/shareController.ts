@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import * as shareService from '../services/shareService';
 import * as fileService from '../services/fileService';
 import { AuthRequest } from '../types';
+import config from '../config';
+import StorageService from '../services/storageService';
 
 /**
  * Create a new share link for a file
@@ -134,7 +136,25 @@ export const downloadSharedFile = async (req: Request, res: Response) => {
     // Increment download count
     await shareService.incrementDownloadCount(share.id);
 
-    // Send file
+    // Check if using Supabase Storage
+    if (config.upload.useSupabaseStorage) {
+      try {
+        // Import StorageService dynamically or ensure it's imported at top
+        const StorageService = require('../services/storageService').default;
+
+        // Get signed URL from Supabase
+        // file.path in DB should store the storage path (e.g., "userId/filename")
+        const signedUrl = await StorageService.getSignedUrl(file.path, 60); // 60 seconds validity
+
+        // Redirect to the signed URL
+        return res.redirect(signedUrl);
+      } catch (storageError: any) {
+        console.error('Supabase download error:', storageError);
+        return res.status(500).json({ error: 'Failed to retrieve file from storage' });
+      }
+    }
+
+    // Fallback to local filesystem
     res.download(file.path, file.original_name, (err) => {
       if (err) {
         console.error('Download error:', err);
