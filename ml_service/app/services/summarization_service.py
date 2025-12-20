@@ -62,6 +62,9 @@ class SummarizationService:
             return
         
         try:
+            # Ensure NLTK data is available (needed for tokenization)
+            _ensure_nltk_data()
+            
             # Get API key from environment
             self.api_key = os.getenv('GEMINI_API_KEY')
             
@@ -81,7 +84,9 @@ class SummarizationService:
             print("✓ Gemini API initialized successfully (gemini-2.5-flash)")
             
         except Exception as e:
-            print(f"Failed to initialize Gemini API: {e}")
+            print(f"Failed to initialize Gemini API or load dependencies: {e}")
+            import traceback
+            traceback.print_exc()
             self.model_loaded = False
             raise
     
@@ -285,6 +290,9 @@ Summary:"""
             }
             
         except Exception as e:
+            print(f"Summarization error: {e}")
+            import traceback
+            traceback.print_exc()
             return {
                 'summary': '',
                 'error': str(e),
