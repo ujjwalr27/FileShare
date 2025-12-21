@@ -31,7 +31,7 @@ class MLServiceClient {
 
     for (let i = 0; i < maxRetries; i++) {
       try {
-        console.log(`Checking ML service health (attempt ${i + 1}/${maxRetries})...`);
+        console.log(`Checking ML service health at ${this.baseURL} (attempt ${i + 1}/${maxRetries})...`);
         const response = await this.client.get('/health', {
           timeout: timeouts[i] || 30000,
           validateStatus: (status) => status < 500 // Accept any non-5xx response

@@ -18,7 +18,6 @@ A modern file sharing application built with React, Node.js, Express, PostgreSQL
 - 🔗 File sharing with links (password-protected, expiring links)
 - 🤖 ML-powered features:
   - Auto-categorization
-  - Duplicate detection
   - Semantic search
   - PII detection
   - Image classification

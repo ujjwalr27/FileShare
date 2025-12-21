@@ -7,10 +7,6 @@ const router = Router();
 // All ML routes require authentication
 router.use(authenticate);
 
-// Duplicate detection
-router.get('/duplicates', mlController.findDuplicates);
-router.post('/duplicates/delete', mlController.deleteDuplicates);
-
 // File recommendations
 router.get('/recommendations/:fileId', mlController.getRecommendations);
 

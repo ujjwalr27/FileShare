@@ -88,9 +88,9 @@ export const config = {
   },
 
   ml: {
-    serviceUrl: process.env.ML_SERVICE_URL || 'http://127.0.0.1:8001',
+    serviceUrl: process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000',
     enabled: process.env.ML_SERVICE_ENABLED !== 'false',
-    url: process.env.ML_SERVICE_URL || 'http://127.0.0.1:8001',
+    url: process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000',
   },
 };
 

@@ -15,7 +15,6 @@ import {
   Folder as FolderIcon,
   FolderPlus,
   Share2,
-  Copy,
   ScanText,
   FileText,
   Filter,
@@ -25,7 +24,6 @@ import Breadcrumb from '../components/Breadcrumb';
 import CreateFolderModal from '../components/CreateFolderModal';
 import ShareModal from '../components/ShareModal';
 import PIIWarningModal from '../components/PIIWarningModal';
-import DuplicatesPanel from '../components/DuplicatesPanel';
 import OCRResultsModal from '../components/OCRResultsModal';
 import SummaryModal from '../components/SummaryModal';
 import RecommendationsPanel from '../components/RecommendationsPanel';
@@ -53,7 +51,7 @@ const Dashboard = () => {
   const [showPIIModal, setShowPIIModal] = useState(false);
   const [piiWarning, setPIIWarning] = useState<any>(null);
   const [piiFile, setPIIFile] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState<'files' | 'duplicates'>('files');
+  const [activeTab, setActiveTab] = useState<'files'>('files');
   const [showOCRModal, setShowOCRModal] = useState(false);
   const [ocrResult, setOCRResult] = useState<any>(null);
   const [ocrFileName, setOCRFileName] = useState('');
@@ -449,16 +447,6 @@ const Dashboard = () => {
             >
               📁 My Files
             </button>
-            <button
-              onClick={() => setActiveTab('duplicates')}
-              className={`flex-1 px-6 py-4 font-semibold transition-all ${activeTab === 'duplicates'
-                ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                }`}
-            >
-              <Copy size={18} className="inline mr-2" />
-              Duplicates
-            </button>
           </div>
         </div>
 
@@ -806,12 +794,6 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* Duplicates Tab Content */}
-        {activeTab === 'duplicates' && (
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-            <DuplicatesPanel />
-          </div>
-        )}
       </main>
 
       {/* PII Warning Modal */}

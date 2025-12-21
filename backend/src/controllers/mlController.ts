@@ -3,50 +3,11 @@ import { AuthRequest } from '../types';
 import { sendSuccess, sendError, asyncHandler } from '../utils/response';
 import mlService from '../services/mlService';
 import ocrService from '../services/ocrService';
-import * as duplicateDetection from '../services/duplicateDetection';
 import { query } from '../config/database';
 import config from '../config';
 import { extractTextFromFile } from '../utils/textExtractor';
 import { StorageService } from '../services/storageService';
 import path from 'path';
-
-/**
- * Find duplicate files
- */
-export const findDuplicates = asyncHandler(async (req: AuthRequest, res: Response) => {
-  if (!req.user) {
-    return sendError(res, 'Unauthorized', 401);
-  }
-
-  try {
-    const result = await duplicateDetection.findDuplicates(req.user.id);
-    return sendSuccess(res, result);
-  } catch (error: any) {
-    return sendError(res, error.message, 500);
-  }
-});
-
-/**
- * Delete duplicate files
- */
-export const deleteDuplicates = asyncHandler(async (req: AuthRequest, res: Response) => {
-  if (!req.user) {
-    return sendError(res, 'Unauthorized', 401);
-  }
-
-  const { fileIds } = req.body;
-
-  if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
-    return sendError(res, 'File IDs are required', 400);
-  }
-
-  try {
-    const result = await duplicateDetection.deleteDuplicates(req.user.id, fileIds);
-    return sendSuccess(res, result, `Deleted ${result.deleted_count} duplicate files`);
-  } catch (error: any) {
-    return sendError(res, error.message, 500);
-  }
-});
 
 /**
  * Get file recommendations

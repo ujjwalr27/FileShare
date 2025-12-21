@@ -2,22 +2,6 @@ import api from './api';
 
 export const mlService = {
   /**
-   * Find duplicate files
-   */
-  findDuplicates: async () => {
-    const response = await api.get('/ml/duplicates');
-    return response.data;
-  },
-
-  /**
-   * Delete duplicate files
-   */
-  deleteDuplicates: async (fileIds: string[]) => {
-    const response = await api.post('/ml/duplicates/delete', { fileIds });
-    return response.data;
-  },
-
-  /**
    * Get file recommendations
    */
   getRecommendations: async (fileId: string) => {
