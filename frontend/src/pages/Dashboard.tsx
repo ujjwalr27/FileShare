@@ -730,7 +730,7 @@ const Dashboard = () => {
                                     <ScanText size={18} />
                                   </button>
                                 )}
-                                {(file.mime_type?.includes('text') || file.mime_type?.includes('pdf')) && (
+                                {(file.mime_type?.includes('text') || file.mime_type?.includes('pdf') || file.mime_type?.includes('image')) && (
                                   <button
                                     onClick={() => handleSummarize(file.id, file.original_name)}
                                     className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all shadow-sm hover:shadow-md"

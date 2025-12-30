@@ -317,6 +317,7 @@ export const extractTextOCR = asyncHandler(async (req: AuthRequest, res: Respons
 
 /**
  * Summarize file content
+ * Automatically performs OCR for images/PDFs if not already done
  */
 export const summarizeFile = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user) {
@@ -346,28 +347,87 @@ export const summarizeFile = asyncHandler(async (req: AuthRequest, res: Response
     // Get text content
     let textContent = '';
 
-    // Check if OCR text exists
+    // Check if OCR text exists in metadata
     if (file.metadata?.ocr_text?.text) {
+      console.log('Using existing OCR text from metadata');
       textContent = file.metadata.ocr_text.text;
     } else {
-      // Try to extract text for text-based files only
+      // Determine file type
+      const isImage = file.mime_type?.includes('image');
+      const isPDF = file.mime_type?.includes('pdf');
       const textExtensions = ['.txt', '.csv', '.log', '.md', '.json', '.xml', '.html'];
       const fileExtension = path.extname(file.original_name).toLowerCase();
+      const isTextFile = textExtensions.includes(fileExtension);
 
-      if (textExtensions.includes(fileExtension)) {
+      if (isImage || isPDF) {
+        // Automatically run OCR for images and PDFs
+        console.log(`Auto-running OCR for ${isImage ? 'image' : 'PDF'} file: ${file.original_name}`);
+
+        // Check if OCR service is available
+        const ocrAvailable = await ocrService.isAvailable();
+        if (!ocrAvailable) {
+          return sendError(res, 'OCR service is currently unavailable. Please try again in a few moments.', 503);
+        }
+
+        // Download file from Supabase Storage
+        let fileBuffer: Buffer;
+        try {
+          console.log(`Downloading file from storage: ${file.path}`);
+          fileBuffer = await StorageService.downloadFile(file.path);
+          console.log(`Downloaded file, size: ${fileBuffer.length} bytes`);
+        } catch (downloadError: any) {
+          console.error('Failed to download file from storage:', downloadError.message);
+          return sendError(res, 'Failed to access file. Please try again.', 500);
+        }
+
+        // Extract text using OCR
+        const ocrResult = await ocrService.extractTextFromBuffer(
+          fileBuffer,
+          file.original_name,
+          file.mime_type
+        );
+
+        if (!ocrResult.success || !ocrResult.text) {
+          return sendError(
+            res,
+            ocrResult.error || 'Could not extract text from this file. The image may be unclear or contain no readable text.',
+            400
+          );
+        }
+
+        textContent = ocrResult.text;
+        console.log(`OCR extracted ${ocrResult.word_count} words`);
+
+        // Save OCR result to metadata for future use
+        await query(
+          `UPDATE files SET metadata = jsonb_set(
+             COALESCE(metadata, '{}'::jsonb),
+             '{ocr_text}',
+             $1::jsonb
+           )
+           WHERE id = $2`,
+          [JSON.stringify({
+            text: ocrResult.text,
+            word_count: ocrResult.word_count,
+            confidence: ocrResult.confidence,
+            extracted_at: new Date().toISOString()
+          }), fileId]
+        );
+      } else if (isTextFile) {
+        // Extract text for text-based files
         textContent = await extractTextFromFile(file.path) || '';
       } else {
-        // For PDFs, images, and other files, require OCR first
+        // Unsupported file type
         return sendError(
           res,
-          'This file type requires OCR text extraction before summarization. Please run OCR on this file first using the /api/ml/ocr/:fileId endpoint.',
+          'This file type is not supported for summarization. Supported types: images, PDFs, and text files (.txt, .csv, .md, .json, .xml, .html)',
           400
         );
       }
     }
 
-    if (!textContent || textContent.length < 100) {
-      return sendError(res, 'Not enough text content to summarize. The file may be too short or empty.', 400);
+    if (!textContent || textContent.length < 50) {
+      return sendError(res, 'Not enough text content to summarize. The file may be too short or contain no readable text.', 400);
     }
 
     // Generate summary based on format
