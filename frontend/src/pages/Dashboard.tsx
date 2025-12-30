@@ -17,8 +17,7 @@ import {
   Share2,
   ScanText,
   FileText,
-  Filter,
-  Sparkles
+  Filter
 } from 'lucide-react';
 import Breadcrumb from '../components/Breadcrumb';
 import CreateFolderModal from '../components/CreateFolderModal';
@@ -26,7 +25,6 @@ import ShareModal from '../components/ShareModal';
 import PIIWarningModal from '../components/PIIWarningModal';
 import OCRResultsModal from '../components/OCRResultsModal';
 import SummaryModal from '../components/SummaryModal';
-import RecommendationsPanel from '../components/RecommendationsPanel';
 import mlService from '../services/mlService';
 
 const Dashboard = () => {
@@ -59,9 +57,7 @@ const Dashboard = () => {
   const [summaryFileId, setSummaryFileId] = useState('');
   const [summaryFileName, setSummaryFileName] = useState('');
   const [summaryResult, setSummaryResult] = useState<any>(null);
-  const [showRecommendations, setShowRecommendations] = useState(false);
-  const [recommendationsFileId, setRecommendationsFileId] = useState('');
-  const [recommendationsFileName, setRecommendationsFileName] = useState('');
+
 
   useEffect(() => {
     loadFolderContents();
@@ -761,17 +757,7 @@ const Dashboard = () => {
                                         <FileText size={18} />
                                       </button>
                                     )}
-                                    <button
-                                      onClick={() => {
-                                        setRecommendationsFileId(file.id);
-                                        setRecommendationsFileName(file.original_name);
-                                        setShowRecommendations(true);
-                                      }}
-                                      className="p-2 text-white bg-pink-600 hover:bg-pink-700 rounded-lg transition-all shadow-sm hover:shadow-md"
-                                      title="Similar Files"
-                                    >
-                                      <Sparkles size={18} />
-                                    </button>
+
                                     <button
                                       onClick={() => handleDelete(file.id)}
                                       className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all shadow-sm hover:shadow-md"
@@ -829,15 +815,7 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Recommendations Panel */}
-      <RecommendationsPanel
-        fileId={recommendationsFileId}
-        fileName={recommendationsFileName}
-        isOpen={showRecommendations}
-        onClose={() => setShowRecommendations(false)}
-        onDownload={(file) => handleDownload(file as File)}
-        onShare={(file) => setShareModalFile({ id: file.id, name: file.original_name })}
-      />
+
 
       {/* Create Folder Modal */}
       <CreateFolderModal
