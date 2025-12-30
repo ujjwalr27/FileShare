@@ -11,18 +11,18 @@ python-multipart==0.0.6
 pydantic==2.10.4
 pydantic-settings==2.1.0
 
-# Machine Learning - Lightweight models
-sentence-transformers==3.3.1
-spacy>=3.7.0,<4.0.0
+# REMOVED for memory optimization (512MB limit):
+# sentence-transformers==3.3.1   # ~150MB RAM - semantic search disabled
+# spacy>=3.7.0,<4.0.0            # ~80MB RAM - using regex PII detection instead
 
-# NLP and text processing
+# NLP and text processing (lightweight)
 nltk==3.8.1
 
 # Image processing (compatible with Python 3.11)
 pillow>=10.0.0
 
-# Data processing
-numpy==2.2.4
+# Data processing - use lighter numpy
+numpy>=1.24.0,<2.0.0
 
 # HTTP client
 httpx==0.25.2
@@ -34,5 +34,5 @@ python-dotenv==1.0.0
 # OCR via cloud API (no local Tesseract needed)
 # Uses OCR.space API - set OCR_SPACE_API_KEY env variable
 
-# Summarization with Gemini API
+# Summarization with Gemini API (cloud-based, no local memory needed)
 google-generativeai>=0.3.0

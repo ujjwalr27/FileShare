@@ -1,30 +1,37 @@
 """
-Model Manager for lazy loading ML models.
-Only one model is loaded at a time to optimize memory usage on systems with 8GB RAM.
+Lightweight Model Manager for ML models.
+Optimized for Render free tier (512MB RAM limit).
+Removes heavy models (Sentence Transformers, spaCy) and uses API-based alternatives.
 """
 from __future__ import annotations
 
 import gc
-from typing import Optional, Literal, TYPE_CHECKING
+from typing import Optional, Literal
 
-# Lazy imports - these are slow and block server startup
-# Only import type hints for IDE support
-if TYPE_CHECKING:
-    from sentence_transformers import SentenceTransformer
-    import spacy
 
 ModelType = Literal["semantic_search", "pii_detection"]
 
+
 class ModelManager:
     """
-    Manages ML models with lazy loading and memory optimization.
-    Only loads one model at a time to stay within 8GB RAM constraint.
+    Manages ML models with memory optimization for 512MB RAM constraint.
+    Uses lightweight alternatives instead of heavy ML models.
     """
 
-    def __init__(self):
+    def __init__(self, init_quick: bool = False):
+        """
+        Initialize the model manager.
+        
+        Args:
+            init_quick: If True, skip any heavy initialization (for fast startup)
+        """
         self.current_model: Optional[str] = None
-        self.semantic_model = None  # Lazy: SentenceTransformer
-        self.pii_model = None  # Lazy: spacy.Language
+        self.semantic_model = None  # Not used - semantic search disabled for memory
+        self.pii_model = None  # Not used - using regex-based PII detection
+        self.is_loaded = True  # Always ready since we don't load heavy models
+        
+        if not init_quick:
+            print("✅ ModelManager initialized (lightweight mode - no heavy models)")
 
     def _unload_all_models(self):
         """Unload all models to free memory."""
@@ -39,84 +46,34 @@ class ModelManager:
         # Force garbage collection
         gc.collect()
 
-        # Clear PyTorch cache if available (lazy import)
-        try:
-            import torch
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-        except ImportError:
-            pass
-
         self.current_model = None
 
     def get_semantic_model(self):
         """
-        Get the semantic search model (MiniLM-L3-v2).
-        Unloads other models if necessary.
+        Get the semantic search model.
+        DISABLED: Returns None to save memory. Semantic search falls back to keyword search.
         """
-        if self.current_model != "semantic_search":
-            print("📥 Loading semantic search model...")
-            self._unload_all_models()
-
-            try:
-                # Load lightweight sentence transformer model (~80MB)
-                # Set cache_folder and use local files if available
-                import os
-                cache_dir = os.path.join(os.getcwd(), 'models', 'sentence-transformers')
-                os.makedirs(cache_dir, exist_ok=True)
-                
-                print(f"Using cache directory: {cache_dir}")
-                
-                # Lazy import - only load when needed
-                from sentence_transformers import SentenceTransformer
-                
-                # Use the more common and stable all-MiniLM-L6-v2 model
-                self.semantic_model = SentenceTransformer(
-                    'all-MiniLM-L6-v2',
-                    device='cpu',  # Force CPU usage
-                    cache_folder=cache_dir
-                )
-                self.current_model = "semantic_search"
-                print("✅ Semantic search model loaded (all-MiniLM-L6-v2)")
-            except Exception as e:
-                print(f"❌ Error loading semantic search model: {str(e)}")
-                raise Exception(
-                    f"Failed to load semantic search model. "
-                    f"Please run 'python download_models.py' first to download required models. "
-                    f"Original error: {str(e)}"
-                )
-
-        return self.semantic_model
+        print("⚠️ Semantic search model disabled (memory optimization for 512MB limit)")
+        print("   Falling back to keyword-based search in backend")
+        return None
 
     def get_pii_model(self):
         """
-        Get the PII detection model (spaCy).
-        Unloads other models if necessary.
+        Get the PII detection model.
+        DISABLED: Returns None. PII detection uses regex patterns instead of spaCy.
         """
-        if self.current_model != "pii_detection":
-            print("📥 Loading PII detection model...")
-            self._unload_all_models()
+        print("⚠️ spaCy PII model disabled (memory optimization for 512MB limit)")
+        print("   Using regex-based PII detection instead")
+        return None
 
-            try:
-                # Lazy import spacy
-                import spacy
-                # Try to load the model if it's already downloaded
-                self.pii_model = spacy.load("en_core_web_sm")
-            except OSError:
-                # If not downloaded, download it first
-                print("📦 Downloading spaCy model (one-time only)...")
-                import subprocess
-                subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
-                import spacy
-                self.pii_model = spacy.load("en_core_web_sm")
-
-            self.current_model = "pii_detection"
-            print("✅ PII detection model loaded")
-
-        return self.pii_model
+    def load(self):
+        """Load models - no-op in lightweight mode."""
+        self.is_loaded = True
+        print("✅ ModelManager ready (lightweight mode)")
 
     def cleanup(self):
         """Clean up all models and free memory."""
         print("🧹 Cleaning up models...")
         self._unload_all_models()
+        gc.collect()
         print("✅ Cleanup complete")

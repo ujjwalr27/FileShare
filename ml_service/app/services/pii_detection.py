@@ -1,18 +1,17 @@
 """
-PII (Personally Identifiable Information) Detection Service.
-Uses spaCy NER (Named Entity Recognition) to detect potential PII in text.
+Lightweight PII (Personally Identifiable Information) Detection Service.
+Uses regex patterns only - no spaCy to keep memory under 512MB on free tier.
 """
 from __future__ import annotations
 
 import re
-from typing import List, Dict, Set, TYPE_CHECKING, Any
+from typing import List, Dict, Any
 
-if TYPE_CHECKING:
-    import spacy
 
 class PIIDetector:
     """
-    Detects personally identifiable information in text using spaCy and regex patterns.
+    Detects personally identifiable information in text using regex patterns only.
+    Memory-efficient version for Render free tier (512MB limit).
     """
 
     # Regex patterns for common PII
@@ -24,14 +23,19 @@ class PIIDetector:
         "ip_address": r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b',
         "date_of_birth": r'\b(?:0[1-9]|1[0-2])[-/](?:0[1-9]|[12][0-9]|3[01])[-/](?:19|20)\d{2}\b'
     }
+    
+    # Simple name detection patterns (common name patterns, not perfect but lightweight)
+    NAME_PATTERNS = {
+        "person_name": r'\b[A-Z][a-z]+\s+[A-Z][a-z]+\b',  # Simple two-word capitalized names
+    }
 
     @staticmethod
-    def detect_pii(nlp: spacy.Language, text: str) -> Dict:
+    def detect_pii_lightweight(text: str) -> Dict:
         """
-        Detect PII in the given text.
+        Detect PII in the given text using regex only (no spaCy).
+        Memory-efficient version.
 
         Args:
-            nlp: spaCy language model
             text: Text to analyze
 
         Returns:
@@ -48,39 +52,7 @@ class PIIDetector:
         if not text or not text.strip():
             return findings
 
-        # 1. NER-based detection using spaCy
-        doc = nlp(text)
-        person_names = set()
-        organizations = set()
-        locations = set()
-
-        for ent in doc.ents:
-            if ent.label_ == "PERSON":
-                person_names.add(ent.text)
-                findings["entities"].append({
-                    "type": "person_name",
-                    "value": ent.text,
-                    "start": ent.start_char,
-                    "end": ent.end_char
-                })
-            elif ent.label_ == "ORG":
-                organizations.add(ent.text)
-                findings["entities"].append({
-                    "type": "organization",
-                    "value": ent.text,
-                    "start": ent.start_char,
-                    "end": ent.end_char
-                })
-            elif ent.label_ in ["GPE", "LOC"]:
-                locations.add(ent.text)
-                findings["entities"].append({
-                    "type": "location",
-                    "value": ent.text,
-                    "start": ent.start_char,
-                    "end": ent.end_char
-                })
-
-        # 2. Pattern-based detection
+        # Pattern-based detection for structured PII
         for pattern_name, pattern in PIIDetector.PATTERNS.items():
             matches = re.finditer(pattern, text)
             for match in matches:
@@ -91,11 +63,29 @@ class PIIDetector:
                     "end": match.end()
                 })
 
-        # 3. Calculate summary and risk level
+        # Simple name detection (not as accurate as spaCy but very lightweight)
+        name_matches = re.finditer(PIIDetector.NAME_PATTERNS["person_name"], text)
+        person_names = set()
+        for match in name_matches:
+            name = match.group()
+            # Filter out common false positives
+            common_phrases = {'The', 'This', 'That', 'These', 'Those', 'What', 'When', 
+                            'Where', 'Which', 'While', 'With', 'From', 'About'}
+            first_word = name.split()[0]
+            if first_word not in common_phrases:
+                person_names.add(name)
+                findings["entities"].append({
+                    "type": "person_name",
+                    "value": name,
+                    "start": match.start(),
+                    "end": match.end()
+                })
+
+        # Calculate summary and risk level
         findings["summary"] = {
             "person_names": len(person_names),
-            "organizations": len(organizations),
-            "locations": len(locations),
+            "organizations": 0,  # Would need NER for accurate detection
+            "locations": 0,  # Would need NER for accurate detection
             "emails": len([p for p in findings["patterns"] if p["type"] == "email"]),
             "phones": len([p for p in findings["patterns"] if p["type"] == "phone"]),
             "ssns": len([p for p in findings["patterns"] if p["type"] == "ssn"]),
@@ -115,6 +105,14 @@ class PIIDetector:
             findings["risk_level"] = "low"
 
         return findings
+
+    @staticmethod
+    def detect_pii(nlp: Any, text: str) -> Dict:
+        """
+        Wrapper that uses lightweight detection (ignores nlp parameter).
+        This maintains API compatibility while using regex-only detection.
+        """
+        return PIIDetector.detect_pii_lightweight(text)
 
     @staticmethod
     def redact_pii(text: str, findings: Dict, redaction_char: str = "*") -> str:

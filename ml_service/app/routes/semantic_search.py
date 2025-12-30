@@ -2,14 +2,15 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional
 
-from ml_service.app.services.semantic_search import SemanticSearch
 
 router = APIRouter()
+
 
 class FileData(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
+
 
 class SearchRequest(BaseModel):
     query: str
@@ -17,92 +18,78 @@ class SearchRequest(BaseModel):
     threshold: Optional[float] = 0.3
     top_k: Optional[int] = 10
 
+
 class GenerateEmbeddingRequest(BaseModel):
     text: str
+
 
 class GenerateTagsRequest(BaseModel):
     filename: str
     content_preview: Optional[str] = None
 
+
 @router.post("/search")
 async def semantic_search(request: SearchRequest, app_request: Request):
     """
-    Perform semantic search on files.
-    Returns files ranked by semantic similarity to the query.
+    Semantic search endpoint.
+    DISABLED: Returns 503 to indicate semantic search is unavailable.
+    The backend will fall back to keyword search.
     """
-    try:
-        # Get model manager from app state
-        model_manager = app_request.app.state.model_manager
-        
-        # Try to load the model
-        try:
-            model = model_manager.get_semantic_model()
-        except Exception as model_error:
-            error_msg = str(model_error)
-            if "not a local folder" in error_msg or "not a valid model identifier" in error_msg:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Semantic search model not available. Please run 'python download_models.py' to download required models."
-                )
-            raise
+    raise HTTPException(
+        status_code=503,
+        detail="Semantic search is disabled (memory optimization for 512MB limit). Using keyword search instead."
+    )
 
-        # Convert Pydantic models to dicts
-        files_data = [
-            {
-                "id": file.id,
-                "name": file.name,
-                "description": file.description
-            }
-            for file in request.files
-        ]
-
-        # Perform search
-        results = SemanticSearch.search_files(
-            model=model,
-            query=request.query,
-            files=files_data,
-            threshold=request.threshold,
-            top_k=request.top_k
-        )
-
-        return {"results": results, "count": len(results)}
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        error_detail = f"{str(e)}\n\nTraceback:\n{traceback.format_exc()}"
-        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.post("/generate-embedding")
 async def generate_embedding(request: GenerateEmbeddingRequest, app_request: Request):
     """
-    Generate an embedding vector for the given text.
-    Useful for pre-computing embeddings for storage.
+    Generate embedding endpoint.
+    DISABLED: Returns 503 to indicate feature is unavailable.
     """
-    try:
-        model_manager = app_request.app.state.model_manager
-        model = model_manager.get_semantic_model()
+    raise HTTPException(
+        status_code=503,
+        detail="Embedding generation is disabled (memory optimization for 512MB limit)."
+    )
 
-        embedding = SemanticSearch.generate_embedding(model, request.text)
-        return {"embedding": embedding, "dimensions": len(embedding)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/generate-tags")
 async def generate_tags(request: GenerateTagsRequest, app_request: Request):
     """
-    Generate relevant tags for a file based on its name and content.
+    Generate tags endpoint.
+    Returns simple tags based on file extension instead of ML-based tags.
     """
-    try:
-        model_manager = app_request.app.state.model_manager
-        model = model_manager.get_semantic_model()
+    filename = request.filename.lower()
+    tags = []
+    
+    # Simple extension-based tagging
+    if filename.endswith(('.pdf',)):
+        tags.append('document')
+    elif filename.endswith(('.doc', '.docx')):
+        tags.append('document')
+        tags.append('word')
+    elif filename.endswith(('.xls', '.xlsx', '.csv')):
+        tags.append('spreadsheet')
+        tags.append('data')
+    elif filename.endswith(('.ppt', '.pptx')):
+        tags.append('presentation')
+    elif filename.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')):
+        tags.append('image')
+    elif filename.endswith(('.mp4', '.avi', '.mov', '.mkv')):
+        tags.append('video')
+    elif filename.endswith(('.mp3', '.wav', '.ogg', '.flac')):
+        tags.append('audio')
+    elif filename.endswith(('.zip', '.rar', '.7z', '.tar', '.gz')):
+        tags.append('archive')
+    elif filename.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.c', '.h')):
+        tags.append('code')
+        tags.append('technical')
+    elif filename.endswith(('.txt', '.md')):
+        tags.append('text')
+    elif filename.endswith(('.json', '.xml', '.yaml', '.yml')):
+        tags.append('data')
+        tags.append('technical')
+    else:
+        tags.append('other')
 
-        tags = SemanticSearch.generate_file_tags(
-            model=model,
-            filename=request.filename,
-            content_preview=request.content_preview or ""
-        )
-
-        return {"tags": tags}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"tags": tags}

@@ -24,16 +24,15 @@ class MLServiceClient {
    * Check if ML service is available with retry for cold starts
    */
   async isAvailable(): Promise<boolean> {
-    const maxRetries = 5;
-    // Progressive timeouts: 5s, 10s, 15s, 20s, 30s
-    // Total wait time potential > 1 minute covering Render cold starts
-    const timeouts = [5000, 10000, 15000, 20000, 30000];
+    const maxRetries = 3;
+    // Longer timeouts for Render free tier cold starts (can take 2-5 minutes)
+    const timeouts = [30000, 60000, 90000]; // 30s, 60s, 90s
 
     for (let i = 0; i < maxRetries; i++) {
       try {
         console.log(`Checking ML service health at ${this.baseURL} (attempt ${i + 1}/${maxRetries})...`);
         const response = await this.client.get('/health', {
-          timeout: timeouts[i] || 30000,
+          timeout: timeouts[i] || 90000,
           validateStatus: (status) => status < 500 // Accept any non-5xx response
         });
 
@@ -45,8 +44,8 @@ class MLServiceClient {
 
         // Service is starting, wait a bit and retry
         if (response.data?.status === 'starting' && i < maxRetries - 1) {
-          console.log('ML service is starting...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          console.log('ML service is starting, waiting for models to load...');
+          await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10s
           continue;
         }
 
@@ -54,12 +53,14 @@ class MLServiceClient {
       } catch (error: any) {
         console.log(`ML service health check attempt ${i + 1} failed:`, error.code || error.message);
         if (i < maxRetries - 1) {
-          // Wait longer between retries
-          const waitTime = 3000 * (i + 1);
+          // Wait between retries - give cold start more time
+          const waitTime = 10000; // 10 seconds between retries
+          console.log(`Waiting ${waitTime / 1000}s before retry...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
+    console.log('ML service is not available after all retries');
     return false;
   }
 
