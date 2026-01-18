@@ -12,8 +12,8 @@ pydantic==2.10.4
 pydantic-settings==2.1.0
 
 # REMOVED for memory optimization (512MB limit):
-# sentence-transformers==3.3.1   # ~150MB RAM - semantic search disabled
-# spacy>=3.7.0,<4.0.0            # ~80MB RAM - using regex PII detection instead
+sentence-transformers==3.3.1   # ~150MB RAM - semantic search disabled
+spacy>=3.7.0,<4.0.0            # ~80MB RAM - using regex PII detection instead
 
 # NLP and text processing (lightweight)
 nltk==3.8.1
